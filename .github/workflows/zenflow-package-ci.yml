@@ -40,15 +40,13 @@ jobs:
         uses: astral-sh/ruff-action@v3
         with:
           version: "latest"
-
-      - name: Install 
-        run: pip install .[dev]
+          src: zenflow
 
       - name: Install Hatch and dependencies
-        working-directory: ./zenflow
         run: |
           python -m pip install --upgrade pip
           pip install hatch
+          pip install .[dev]
           hatch env create # Creates default test environment
 
 
