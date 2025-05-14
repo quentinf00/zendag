@@ -36,12 +36,21 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install the latest version of ruff
+        uses: astral-sh/ruff-action@v3
+        with:
+          version: "latest"
+
+      - name: Install 
+        run: pip install .[dev]
+
       - name: Install Hatch and dependencies
         working-directory: ./zenflow
         run: |
           python -m pip install --upgrade pip
           pip install hatch
           hatch env create # Creates default test environment
+
 
       - name: Lint with Ruff (via Hatch)
         working-directory: ./zenflow
