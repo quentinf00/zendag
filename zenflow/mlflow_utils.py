@@ -5,11 +5,15 @@ import os
 import pandas as pd
 from omegaconf import OmegaConf, DictConfig
 import logging
-import hydra # To access Hydra's runtime config
+import hydra  # To access Hydra's runtime config
 
 _log = logging.getLogger(__name__)
 
-def mlflow_run(wrapped_function, project_name: str = os.environ.get("MLFLOW_PROJECT_NAME", "DefaultProject")):
+
+def mlflow_run(
+    wrapped_function,
+    project_name: str = os.environ.get("MLFLOW_PROJECT_NAME", "DefaultProject"),
+):
     """
     Decorator to wrap a function execution within nested MLflow runs.
 
@@ -20,6 +24,7 @@ def mlflow_run(wrapped_function, project_name: str = os.environ.get("MLFLOW_PROJ
     - Logs the Hydra run log file (run.log) as an artifact upon completion or failure.
     - Handles exceptions and ensures logs are captured if possible.
     """
+
     @wraps(wrapped_function)
     def wrapper(*args, **kwargs):
         parent_run_id = None
@@ -37,7 +42,9 @@ def mlflow_run(wrapped_function, project_name: str = os.environ.get("MLFLOW_PROJ
         _log.info(f"Using MLflow experiment: '{project_name}'")
 
         # DVC sets this environment variable during `dvc repro` or `dvc exp run`
-        dvc_stage_name = os.environ.get("DVC_STAGE") # e.g., "training/train-interburst"
+        dvc_stage_name = os.environ.get(
+            "DVC_STAGE"
+        )  # e.g., "training/train-interburst"
         run_name = dvc_stage_name or wrapped_function.__name__
 
         try:
@@ -46,19 +53,23 @@ def mlflow_run(wrapped_function, project_name: str = os.environ.get("MLFLOW_PROJ
                 _log.info(f"Active MLflow parent run ID: {parent_run.info.run_id}")
                 # Store the potentially *new* parent run ID if one wasn't provided
                 if not parent_run_id:
-                     pipeline_id_file.write_text(parent_run.info.run_id + "\n")
-                     _log.info(f"Wrote new parent run ID to .pipeline_id: {parent_run.info.run_id}")
+                    pipeline_id_file.write_text(parent_run.info.run_id + "\n")
+                    _log.info(
+                        f"Wrote new parent run ID to .pipeline_id: {parent_run.info.run_id}"
+                    )
 
                 # Start the nested child run for the specific stage/function
                 with mlflow.start_run(run_name=run_name, nested=True) as child_run:
-                    _log.info(f"Started nested MLflow run '{run_name}' (ID: {child_run.info.run_id})")
+                    _log.info(
+                        f"Started nested MLflow run '{run_name}' (ID: {child_run.info.run_id})"
+                    )
 
                     # Log parameters and config artifact if running as a DVC stage
                     hydra_cfg = None
                     if dvc_stage_name:
                         try:
                             # Infer config path from dvc_stage_name and standard structure
-                            stage, config_name = dvc_stage_name.split('/', 1)
+                            stage, config_name = dvc_stage_name.split("/", 1)
                             # Use the same logic as configure_pipeline (needs access to configs_dir_fn)
                             # Simplification: Assume standard 'artifacts/' structure for now
                             # TODO: Make config path resolution more robust (maybe pass via env?)
@@ -69,32 +80,40 @@ def mlflow_run(wrapped_function, project_name: str = os.environ.get("MLFLOW_PROJ
                                 hydra_cfg = OmegaConf.load(config_path)
                                 # Flatten the dictionary for MLflow params
                                 params_flat = pd.json_normalize(
-                                    OmegaConf.to_container(hydra_cfg, resolve=True), # Resolve interpolations before logging
-                                    sep="."
-                                ).to_dict(orient='records')[0]
+                                    OmegaConf.to_container(
+                                        hydra_cfg, resolve=True
+                                    ),  # Resolve interpolations before logging
+                                    sep=".",
+                                ).to_dict(orient="records")[0]
                                 # Log parameters (MLflow truncates long values)
                                 for k, v in params_flat.items():
-                                     mlflow.log_param(k, v)
+                                    mlflow.log_param(k, v)
                                 # Log the config file itself
                                 mlflow.log_artifact(config_path.as_posix())
                             else:
-                                _log.warning(f"Config file not found at expected path: {config_path}")
+                                _log.warning(
+                                    f"Config file not found at expected path: {config_path}"
+                                )
                         except Exception as e:
-                            _log.error(f"Failed to load or log config for stage {dvc_stage_name}. Error: {e}", exc_info=True)
+                            _log.error(
+                                f"Failed to load or log config for stage {dvc_stage_name}. Error: {e}",
+                                exc_info=True,
+                            )
                     else:
                         # If not a DVC stage, try to get config from Hydra's context if available
                         # This requires the decorated function to be the Hydra entry point
                         try:
-                           if hydra.core.hydra_config.HydraConfig.initialized():
-                               hydra_cfg = hydra.core.hydra_config.HydraConfig.get()
-                               # Log runtime config params maybe? Careful, can be large.
-                               # mlflow.log_params(OmegaConf.to_container(hydra_cfg.runtime, resolve=True))
-                               _log.info("Running outside DVC context, Hydra config might be available.")
-                           else:
+                            if hydra.core.hydra_config.HydraConfig.initialized():
+                                hydra_cfg = hydra.core.hydra_config.HydraConfig.get()
+                                # Log runtime config params maybe? Careful, can be large.
+                                # mlflow.log_params(OmegaConf.to_container(hydra_cfg.runtime, resolve=True))
+                                _log.info(
+                                    "Running outside DVC context, Hydra config might be available."
+                                )
+                            else:
                                 _log.info("Running outside DVC and Hydra context.")
-                        except Exception: # Catch potential errors if Hydra not init
+                        except Exception:  # Catch potential errors if Hydra not init
                             _log.info("Hydra context not available.")
-
 
                     # Execute the wrapped function
                     try:
@@ -106,23 +125,39 @@ def mlflow_run(wrapped_function, project_name: str = os.environ.get("MLFLOW_PROJ
                     except Exception as e:
                         _log.exception(f"Execution failed for '{run_name}'.")
                         # Log run.log artifact even on failure
-                        log_path = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir) / "run.log" if hydra.core.hydra_config.HydraConfig.initialized() else None
+                        log_path = (
+                            Path(
+                                hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+                            )
+                            / "run.log"
+                            if hydra.core.hydra_config.HydraConfig.initialized()
+                            else None
+                        )
                         if log_path and log_path.exists():
-                             _log.info(f"Logging run log on failure: {log_path}")
-                             mlflow.log_artifact(log_path.as_posix())
-                        raise e # Re-raise the exception
+                            _log.info(f"Logging run log on failure: {log_path}")
+                            mlflow.log_artifact(log_path.as_posix())
+                        raise e  # Re-raise the exception
 
                     # Log run.log artifact on success
-                    log_path = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir) / "run.log" if hydra.core.hydra_config.HydraConfig.initialized() else None
+                    log_path = (
+                        Path(
+                            hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+                        )
+                        / "run.log"
+                        if hydra.core.hydra_config.HydraConfig.initialized()
+                        else None
+                    )
                     if log_path and log_path.exists():
-                         _log.info(f"Logging run log on success: {log_path}")
-                         mlflow.log_artifact(log_path.as_posix())
+                        _log.info(f"Logging run log on success: {log_path}")
+                        mlflow.log_artifact(log_path.as_posix())
 
-                    return result # Return the function's result
+                    return result  # Return the function's result
 
         except Exception as e:
             # Catch errors starting MLflow runs etc.
-            _log.exception(f"An error occurred in the mlflow_run wrapper for '{run_name}'.")
+            _log.exception(
+                f"An error occurred in the mlflow_run wrapper for '{run_name}'."
+            )
             raise e
 
     return wrapper

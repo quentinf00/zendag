@@ -218,9 +218,8 @@ The key is the interaction between configure_pipeline, OmegaConf.resolve, and th
 
 This avoids manual duplication of paths between the config where they are used and the DVC pipeline definition.
 
-## 4. Cookiecutter Template Documentation (`README.md` for template users)
 
-```markdown
+## 4. [Cookiecutter Template Documentation (`README.md` for template users)](./cookiecutter-zenflow-template/README.md)
 
 ## License
 Apache 2.0

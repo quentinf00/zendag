@@ -37,6 +37,8 @@ lint-all = [
   "ruff format --check .",
   "ruff check .",
 ]
+[tool.hatch.metadata]
+allow-direct-references = true
 
 dependencies = [
     "hydra-zen>=0.14.0,<1.0", # Check latest compatible version
@@ -112,7 +114,6 @@ known-first-party = ["zenflow"]
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
-skip-string-normalization = false
 line-ending = "auto"
 
 [tool.mypy]
