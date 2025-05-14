@@ -72,9 +72,7 @@ def configure_pipeline(
 
     try:
         store.add_to_hydra_store()
-        _log.debug(
-            f"  Successfully added store configurations to hydra"
-        )
+        _log.debug(f"  Successfully added store configurations to hydra")
     except Exception as e:
         _log.error(
             f"  Failed add store configurations to hydra'. Error: {e}",

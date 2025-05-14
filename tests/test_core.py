@@ -1,18 +1,23 @@
 # tests/test_core.py
 import pytest
 from pathlib import Path
-import yaml # For parsing dvc.yaml
+import yaml  # For parsing dvc.yaml
 from omegaconf import OmegaConf, MissingMandatoryValue
 import omegaconf
 import hydra_zen
-import hydra # For hydra.initialize if needed, though configure_pipeline does it
+import hydra  # For hydra.initialize if needed, though configure_pipeline does it
 
-from zenflow.core import configure_pipeline, default_stage_dir_fn, default_configs_dir_fn
+from zenflow.core import (
+    configure_pipeline,
+    default_stage_dir_fn,
+    default_configs_dir_fn,
+)
 from .conftest import (
     create_dummy_hydra_config_content,
     test_project_stage_dir_fn,
     test_project_configs_dir_fn,
 )
+
 
 # A dummy target function for hydra-zen builds
 def dummy_stage_function(output_path: str, input_path: str = None, some_param: int = 0):
@@ -25,17 +30,19 @@ def dummy_stage_function(output_path: str, input_path: str = None, some_param: i
 
 @pytest.fixture
 def setup_hydra_for_compose(temp_cwd):
-    """ Ensure hydra can compose from the temp directory """
+    """Ensure hydra can compose from the temp directory"""
     # configure_pipeline does hydra.initialize itself, but if individual tests need it:
     if not hydra.core.global_hydra.GlobalHydra.instance().is_initialized():
-        hydra.initialize(version_base="1.3", config_path=None) # Initialize relative to CWD
+        hydra.initialize(
+            version_base="1.3", config_path=None
+        )  # Initialize relative to CWD
     yield
     if hydra.core.global_hydra.GlobalHydra.instance().is_initialized():
         hydra.core.global_hydra.GlobalHydra.instance().clear()
 
 
 def test_configure_pipeline_single_stage_no_deps(
-    temp_cwd: Path, # Changes CWD to temp_cwd
+    temp_cwd: Path,  # Changes CWD to temp_cwd
     temp_artifacts_dir: Path,
     zen_store: hydra_zen.ZenStore,
 ):
@@ -47,9 +54,9 @@ def test_configure_pipeline_single_stage_no_deps(
     # Create a builds config for the dummy function
     ProcessAConfig = hydra_zen.builds(
         dummy_stage_function,
-        output_path=f"${{outs:{output_file}}}", # Using the string directly for ZenBuildsConf
+        output_path=f"${{outs:{output_file}}}",  # Using the string directly for ZenBuildsConf
         some_param=10,
-        populate_full_signature=True # Ensure all args are in the config
+        populate_full_signature=True,  # Ensure all args are in the config
     )
     # Add to store (mimicking user's configure.py)
     stage_store = zen_store(group=stage_name)
@@ -66,7 +73,7 @@ def test_configure_pipeline_single_stage_no_deps(
         stage_dir_fn=stage_dir_func,
         configs_dir_fn=configs_dir_func,
         dvc_filename="dvc_test.yaml",
-        run_script="my_project.run_stage"
+        run_script="my_project.run_stage",
     )
 
     # --- Assertions ---
@@ -76,16 +83,20 @@ def test_configure_pipeline_single_stage_no_deps(
     composed_cfg = OmegaConf.load(composed_config_path)
     print(OmegaConf.to_yaml(composed_cfg))
     composed_cfg = OmegaConf.select(composed_cfg, stage_name)
-    assert composed_cfg._target_ == "tests.test_core.dummy_stage_function" # Path to dummy_stage_function
+    assert (
+        composed_cfg._target_ == "tests.test_core.dummy_stage_function"
+    )  # Path to dummy_stage_function
     assert composed_cfg.some_param == 10
     # Check that 'outs' resolved correctly during write (it won't be in the written file, but was used for path)
     # The path in the config should be the resolved one (relative to its own output dir)
-    assert composed_cfg.output_path == output_file # outs should resolve to the filename itself
+    assert (
+        composed_cfg.output_path == output_file
+    )  # outs should resolve to the filename itself
 
     # 2. Check dvc.yaml was written
     dvc_file_path = temp_cwd / "dvc_test.yaml"
     assert dvc_file_path.exists()
-    with open(dvc_file_path, 'r') as f:
+    with open(dvc_file_path, "r") as f:
         dvc_data = yaml.safe_load(f)
 
     # 3. Check dvc.yaml content
@@ -99,7 +110,7 @@ def test_configure_pipeline_single_stage_no_deps(
         f"hydra.run.dir='{temp_artifacts_dir / stage_name / config_name}'"
     )
     assert expected_cmd_part in stage_info["cmd"]
-    assert stage_info["deps"] == [] # No dependencies
+    assert stage_info["deps"] == []  # No dependencies
     assert stage_info["outs"] == [output_file]
     assert stage_info["params"] == [{str(composed_config_path): None}]
 
@@ -117,7 +128,7 @@ def test_configure_pipeline_with_inter_stage_deps(
     GenDataConfig = hydra_zen.builds(
         dummy_stage_function,
         output_path=f"${{outs:{stage1_output}}}",
-        populate_full_signature=True
+        populate_full_signature=True,
     )
     zen_store(group=stage1_name)(GenDataConfig, name=config1_name)
 
@@ -128,7 +139,9 @@ def test_configure_pipeline_with_inter_stage_deps(
     # Stage 2 depends on stage 1's output
     # For deps to resolve correctly, the hydra resolver for 'stage_dir' needs to be active
     # and the stage_dir_fn for that needs to be the one used by configure_pipeline
-    stage_dir_func = test_project_stage_dir_fn(temp_artifacts_dir) # This will be used by deps resolver
+    stage_dir_func = test_project_stage_dir_fn(
+        temp_artifacts_dir
+    )  # This will be used by deps resolver
 
     ProcessDataConfig = hydra_zen.builds(
         dummy_stage_function,
@@ -138,7 +151,7 @@ def test_configure_pipeline_with_inter_stage_deps(
         input_path=f"${{deps:${{stage_dir:{stage1_name},{config1_name}}}/{stage1_output}}}",
         output_path=f"${{outs:{stage2_output}}}",
         some_param=22,
-        populate_full_signature=True
+        populate_full_signature=True,
     )
     zen_store(group=stage2_name)(ProcessDataConfig, name=config2_name)
 
@@ -148,15 +161,15 @@ def test_configure_pipeline_with_inter_stage_deps(
     configure_pipeline(
         store=zen_store,
         stage_groups=[stage1_name, stage2_name],
-        stage_dir_fn=stage_dir_func, # Passed to configure_pipeline, will be used by its 'stage_dir' resolver
+        stage_dir_fn=stage_dir_func,  # Passed to configure_pipeline, will be used by its 'stage_dir' resolver
         configs_dir_fn=configs_dir_func,
-        dvc_filename="dvc_deps_test.yaml"
+        dvc_filename="dvc_deps_test.yaml",
     )
 
     # --- Assertions ---
     dvc_file_path = temp_cwd / "dvc_deps_test.yaml"
     assert dvc_file_path.exists()
-    with open(dvc_file_path, 'r') as f:
+    with open(dvc_file_path, "r") as f:
         dvc_data = yaml.safe_load(f)
 
     # Check stage 2 (process_data)
@@ -164,46 +177,52 @@ def test_configure_pipeline_with_inter_stage_deps(
     assert dvc_stage2_key in dvc_data["stages"]
     stage2_info = dvc_data["stages"][dvc_stage2_key]
 
-    expected_stage1_output_path_in_dvc_deps = str(temp_artifacts_dir / stage1_name / config1_name / stage1_output)
+    expected_stage1_output_path_in_dvc_deps = str(
+        temp_artifacts_dir / stage1_name / config1_name / stage1_output
+    )
     assert stage2_info["deps"] == [expected_stage1_output_path_in_dvc_deps]
     assert stage2_info["outs"] == [stage2_output]
 
     # Check composed config for stage 2
-    composed_stage2_config_path = temp_artifacts_dir / stage2_name / f"{config2_name}.yaml"
+    composed_stage2_config_path = (
+        temp_artifacts_dir / stage2_name / f"{config2_name}.yaml"
+    )
     assert composed_stage2_config_path.exists()
     s2_cfg = OmegaConf.load(composed_stage2_config_path)
     # The input_path in the *written* config file should be resolved relative to nothing (i.e., the full path)
     # because the `${deps:...}` resolver just returns `k` after appending to the list.
     # And `${stage_dir...}` resolves to the path.
-    assert OmegaConf.select(s2_cfg, stage2_name).input_path == str(temp_artifacts_dir / stage1_name / config1_name / stage1_output)
+    assert OmegaConf.select(s2_cfg, stage2_name).input_path == str(
+        temp_artifacts_dir / stage1_name / config1_name / stage1_output
+    )
 
 
 def test_configure_pipeline_empty_stage_group(
     temp_cwd: Path,
     temp_artifacts_dir: Path,
     zen_store: hydra_zen.ZenStore,
-    caplog # To capture log messages
+    caplog,  # To capture log messages
 ):
     caplog.set_level("WARNING")
     configure_pipeline(
-        store=zen_store, # Empty store for this group
+        store=zen_store,  # Empty store for this group
         stage_groups=["non_existent_stage"],
         stage_dir_fn=test_project_stage_dir_fn(temp_artifacts_dir),
         configs_dir_fn=test_project_configs_dir_fn(temp_artifacts_dir),
     )
-    assert "No configurations found in store for stage group: 'non_existent_stage'" in caplog.text
-    dvc_file = temp_cwd / "dvc.yaml" # Default name
-    assert dvc_file.exists() # Should still create an empty dvc.yaml
-    with open(dvc_file, 'r') as f:
+    assert (
+        "No configurations found in store for stage group: 'non_existent_stage'"
+        in caplog.text
+    )
+    dvc_file = temp_cwd / "dvc.yaml"  # Default name
+    assert dvc_file.exists()  # Should still create an empty dvc.yaml
+    with open(dvc_file, "r") as f:
         dvc_data = yaml.safe_load(f)
     assert dvc_data["stages"] == {}
 
 
 def test_configure_pipeline_config_resolution_failure(
-    temp_cwd: Path,
-    temp_artifacts_dir: Path,
-    zen_store: hydra_zen.ZenStore,
-    caplog
+    temp_cwd: Path, temp_artifacts_dir: Path, zen_store: hydra_zen.ZenStore, caplog
 ):
     caplog.set_level("ERROR")
     stage_name = "failing_stage"
@@ -214,7 +233,7 @@ def test_configure_pipeline_config_resolution_failure(
     # This specific way of making it fail resolution is tricky with just string interpolation.
     # Let's make it fail due to a bad interpolation for 'outs' or 'deps'.
     BadConf = hydra_zen.make_config(
-        bad_output = "${outs:${this_is_not_closed}" # Malformed interpolation
+        bad_output="${outs:${this_is_not_closed}"  # Malformed interpolation
     )
     zen_store(group=stage_name)(BadConf, name=config_name)
 
