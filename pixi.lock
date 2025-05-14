@@ -1797,7 +1797,7 @@ packages:
 - pypi: .
   name: zenflow
   version: 0.1.0
-  sha256: 3b5fbba4a1943703c6d8a5e214a0963a94a0fe46234364f3796208e5ac0ae182
+  sha256: d13d29d794400795a14da94b2a4a88d40e2aedeb2abcf99716d85707bdbdaf63
   requires_dist:
   - hydra-zen>=0.14.0,<1.0
   - mlflow>=2.0.0,<4.0

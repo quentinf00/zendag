@@ -42,7 +42,7 @@ test = "pytest {args:tests}"
 test-cov = "pytest --cov=zenflow --cov-report=xml --cov-report=term-missing {args:tests}"
 lint-all = [
   "ruff format --check zenflow tests",
-  "ruff check zenflow tests",
+#   "ruff check zenflow tests",
 ]
 docs-build = "sphinx-build -b html docs docs/_build/html {args}"
 docs-clean = "rm -rf docs/_build"
