@@ -45,11 +45,11 @@ jobs:
 
       - name: Lint with Ruff (via Hatch)
         working-directory: ./zenflow
-        run: hatch run lint:all
+        run: hatch run lint-all
 
       - name: Run tests with Pytest (via Hatch)
         working-directory: ./zenflow
-        run: hatch run test:cov
+        run: hatch run test-cov
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
