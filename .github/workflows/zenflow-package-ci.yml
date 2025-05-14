@@ -1,0 +1,110 @@
+# .github/workflows/zenflow-package-ci.yml
+name: ZenFlow Package CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths: # Trigger only if zenflow package files change
+      - 'zenflow/**'
+      - '.github/workflows/zenflow-package-ci.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'zenflow/**'
+      - '.github/workflows/zenflow-package-ci.yml'
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11'] # Test against supported Python versions
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Hatch (build backend) and dependencies
+        working-directory: ./zenflow # Important: operations relative to zenflow package
+        run: |
+          python -m pip install --upgrade pip
+          pip install hatch
+          hatch env create # Creates default test environment based on pyproject.toml
+
+      - name: Lint with Ruff (via Hatch)
+        working-directory: ./zenflow
+        run: hatch run lint:all # Assuming 'lint:all' script in hatch/pyproject.toml for ruff check and format --check
+
+      - name: Run tests with Pytest (via Hatch)
+        working-directory: ./zenflow
+        run: hatch run test:cov # Assuming 'test:cov' script for pytest with coverage
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4
+        if: matrix.python-version == '3.10' # Only upload from one Python version job
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} # Add this to your GitHub repository secrets
+          files: ./zenflow/coverage.xml # Adjust path if necessary
+          working-directory: ./zenflow # Ensure Codecov action looks in the right place
+          fail_ci_if_error: true
+
+  build-package:
+    runs-on: ubuntu-latest
+    needs: lint-and-test # Run only if linting and tests pass
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' # Build only on push to main
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10' # Or your primary build Python version
+
+      - name: Install Hatch
+        run: pip install hatch
+
+      - name: Build package
+        working-directory: ./zenflow
+        run: hatch build # This creates sdist and wheel in zenflow/dist/
+
+      - name: Store package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: zenflow-package-${{ github.sha }}
+          path: zenflow/dist/*
+
+  # Optional: Publish to PyPI (or other index)
+  # publish-to-pypi:
+  #   runs-on: ubuntu-latest
+  #   needs: build-package
+  #   if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') # Trigger on version tags
+  #   environment:
+  #     name: pypi
+  #     url: https://pypi.org/p/zenflow
+  #   permissions:
+  #     id-token: write # For trusted publishing
+
+  #   steps:
+  #     - name: Download all workflow run artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: zenflow-package-${{ github.sha }}
+  #         path: zenflow/dist
+
+  #     - name: Publish package to PyPI
+  #       uses: pypa/gh-action-pypi-publish@release/v1
+  #       with:
+  #         packages-dir: zenflow/dist/
+          # user: __token__
+          # password: ${{ secrets.PYPI_API_TOKEN }} # Store your PyPI token in GitHub secrets

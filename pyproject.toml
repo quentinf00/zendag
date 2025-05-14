@@ -1,0 +1,133 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "zenflow"
+version = "0.1.0" # Or your desired starting version
+description = "A framework for integrating Hydra/DVC/MLflow for reproducible ML experiments."
+readme = "README.md" # Assuming your detailed docs are in README.md
+requires-python = ">=3.8" # Or your minimum supported Python version
+license = { file = "LICENSE" } # Create a LICENSE file (e.g., MIT, Apache-2.0)
+authors = [
+    { name = "Your Name", email = "your.email@example.com" },
+]
+keywords = ["mlops", "dvc", "hydra", "mlflow", "reproducibility", "workflow", "machine-learning"]
+classifiers = [
+    "Development Status :: 3 - Alpha", # Or "4 - Beta", "5 - Production/Stable"
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License", # Choose your license
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Archiving :: Version Control", # For DVC aspect
+    "Topic :: Utilities",
+]
+# zenflow/pyproject.toml
+[tool.hatch.envs.default.scripts]
+test = "pytest {args:tests}"
+test-cov = "pytest --cov=zenflow --cov-report=xml --cov-report=term-missing {args:tests}"
+lint-all = [
+  "ruff format --check .",
+  "ruff check .",
+]
+
+dependencies = [
+    "hydra-zen>=0.14.0,<1.0", # Check latest compatible version
+    "mlflow>=3.0.0,<4.0", # Check latest stable MLflow
+    "pandas>=1.3.0,<3.0", # For parameter normalization in mlflow_utils
+    "toolz>=0.11.0,<1.0", # If still used by configure_pipeline (was in original)
+    # DVC is a CLI tool used *with* zenflow, not usually a direct library dependency
+    # unless you plan to call DVC Python API directly from zenflow, which is uncommon.
+    # Users will install DVC separately via pip or their package manager.
+]
+
+[project.urls]
+Homepage = "https://github.com/quentinf00/zenflow" # Replace with actual URL
+Repository = "https://github.com/quentinf00/zenflow"
+Issues = "https://github.com/quentinf00/zenflow/issues"
+# Documentation = "https://quentinf00.github.io/zenflow" # If you set up GitHub Pages
+
+# Optional: Define entry points if ZenFlow has CLI commands itself
+# (configure_pipeline is usually run as a script, not a CLI tool of zenflow itself)
+# [project.scripts]
+# zenflow-configure = "zenflow.cli:configure_main" # Example if you add a CLI
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=3.0",
+    "ruff>=0.1.0", # For linting and formatting
+    "mypy>=1.0", # For static type checking
+    "pre-commit>=3.0", # For managing pre-commit hooks
+]
+docs = [
+    "sphinx>=5.0",
+    "sphinx-rtd-theme>=1.0", # Or another theme
+    "myst-parser>=0.18", # For Markdown support in Sphinx
+]
+
+[tool.hatch.version]
+path = "zenflow/__init__.py" # Assuming you'll put __version__ = "0.1.0" there
+
+[tool.hatch.build.targets.sdist]
+# Include necessary files in the source distribution
+include = [
+    "/zenflow",
+    "/README.md",
+    "/LICENSE",
+    # "/docs", # If you want to include raw docs source
+    # "/tests", # Typically not included in sdist, but can be
+]
+
+[tool.hatch.build.targets.wheel]
+# Include necessary files in the wheel
+packages = ["zenflow"]
+
+
+[tool.ruff]
+line-length = 88
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # Pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+]
+ignore = [
+    "E501", # Line too long, handled by formatter
+]
+
+
+[tool.ruff.lint.isort]
+known-first-party = ["zenflow"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-string-normalization = false
+line-ending = "auto"
+
+[tool.mypy]
+python_version = "3.8" # Or your minimum
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true # Start with true, then gradually fix and remove
+# For stricter checking:
+# disallow_untyped_defs = true
+# disallow_incomplete_defs = true
+
+# If you use pytest
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --cov=zenflow --cov-report=term-missing"
+testpaths = [
+    "tests",
+]

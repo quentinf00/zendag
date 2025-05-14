@@ -1,0 +1,17 @@
+{
+    "project_name": "My Awesome ML Project",
+    "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '_').replace('-', '_') }}",
+    "project_description": "A short description of the project.",
+    "author_name": "Your Name",
+    "author_email": "your.email@example.com",
+    "python_version": ["3.11", "3.10", "3.9", "3.8"],
+    "zenflow_version": "0.1.0",
+    "mlflow_project_name": "{{ cookiecutter.project_slug }}",
+    "mlflow_tracking_uri": "http://localhost:5000",
+    "artifacts_dir": "artifacts",
+    "dvc_remote_name": "myremote",
+    "create_example_stage": ["yes", "no"],
+    "add_pytorch": ["yes", "no"],
+    "license": ["MIT", "Apache-2.0", "None"],
+    "version": "0.1.0"
+}
