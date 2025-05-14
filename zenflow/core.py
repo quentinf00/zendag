@@ -1,11 +1,11 @@
-from pathlib import Path
-from omegaconf import OmegaConf, DictConfig
-import hydra_zen
-import hydra
-import os
 import logging
-from typing import List, Dict, Any, Tuple, Callable, Optional
-import toolz
+import os
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
+import hydra
+import hydra_zen
+from omegaconf import OmegaConf
 
 _log = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ def configure_pipeline(
     all_deps: Dict[Tuple[str, str], List[str]] = {}
     all_outs: Dict[Tuple[str, str], List[str]] = {}
 
-    _log.info(f"Initializing Hydra (version_base=1.3) for configuration composition.")
+    _log.info("Initializing Hydra (version_base=1.3) for configuration composition.")
     # Initialize Hydra once if needed, respecting config_root
     if config_root:
         hydra.initialize(version_base="1.3", config_path=config_root)
@@ -72,7 +72,7 @@ def configure_pipeline(
 
     try:
         store.add_to_hydra_store()
-        _log.debug(f"  Successfully added store configurations to hydra")
+        _log.debug("  Successfully added store configurations to hydra")
     except Exception as e:
         _log.error(
             f"  Failed add store configurations to hydra'. Error: {e}",

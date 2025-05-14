@@ -1,6 +1,7 @@
+from pathlib import Path
+
 import hydra_zen
 import mlflow
-from pathlib import Path
 
 
 def start_pipeline(run_name, project_name, dvc_root):

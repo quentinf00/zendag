@@ -1,7 +1,8 @@
 # tests/test_config_utils.py
+
 import pytest
+
 from zenflow.config_utils import deps_path, outs_path
-from pathlib import Path
 
 
 def test_outs_path_simple():

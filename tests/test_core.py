@@ -1,21 +1,20 @@
 # tests/test_core.py
-import pytest
 from pathlib import Path
-import yaml  # For parsing dvc.yaml
-from omegaconf import OmegaConf, MissingMandatoryValue
-import omegaconf
-import hydra_zen
+
 import hydra  # For hydra.initialize if needed, though configure_pipeline does it
+import hydra_zen
+import omegaconf
+import pytest
+import yaml  # For parsing dvc.yaml
+from omegaconf import OmegaConf
 
 from zenflow.core import (
     configure_pipeline,
-    default_stage_dir_fn,
-    default_configs_dir_fn,
 )
+
 from .conftest import (
-    create_dummy_hydra_config_content,
-    test_project_stage_dir_fn,
     test_project_configs_dir_fn,
+    test_project_stage_dir_fn,
 )
 
 
@@ -230,4 +229,4 @@ def test_configure_pipeline_config_resolution_failure(
             configs_dir_fn=test_project_configs_dir_fn(temp_artifacts_dir),
         )
 
-    assert f" Failed add store configurations to hydra" in caplog.text
+    assert " Failed add store configurations to hydra" in caplog.text

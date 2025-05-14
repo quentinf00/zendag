@@ -1,8 +1,8 @@
 # tests/test_mlflow_utils.py
-import pytest
-from unittest.mock import patch, MagicMock, mock_open, call
 from pathlib import Path
-import os
+from unittest.mock import MagicMock, patch
+
+import pytest
 from omegaconf import OmegaConf
 
 from zenflow.mlflow_utils import mlflow_run
@@ -173,5 +173,5 @@ def test_mlflow_run_failure(
 
     # Assert that log artifact was still attempted on failure
     # The path to run.log needs to be correctly mocked via MockPath or HydraConfig mock
-    expected_log_path_str = str(Path(f"artifacts/test_group/test_stage") / "run.log")
+    expected_log_path_str = str(Path("artifacts/test_group/test_stage") / "run.log")
     mock_mlflow_module.log_artifact.assert_any_call(str(temp_cwd / expected_log_path_str))
