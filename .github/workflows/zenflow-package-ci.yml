@@ -39,8 +39,7 @@ jobs:
       - name: Install the latest version of ruff
         uses: astral-sh/ruff-action@v3
         with:
-          version: "latest"
-          src: zenflow
+          args: "--version"
 
       - name: Install Hatch and dependencies
         run: |
@@ -51,11 +50,9 @@ jobs:
 
 
       - name: Lint with Ruff (via Hatch)
-        working-directory: ./zenflow
         run: hatch run lint-all
 
       - name: Run tests with Pytest (via Hatch)
-        working-directory: ./zenflow
         run: hatch run test-cov
 
       - name: Upload coverage reports to Codecov
@@ -63,8 +60,7 @@ jobs:
         if: matrix.python-version == '3.10'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./zenflow/coverage.xml
-          working-directory: ./zenflow
+          files: ./coverage.xml
           fail_ci_if_error: true
 
   build-package:

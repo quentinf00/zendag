@@ -54,13 +54,9 @@ def create_dummy_hydra_config_content(
 ):
     content_parts = [f"_target_: {target_path}"]
     if output_file:
-        content_parts.append(
-            f"output_path: ${{outs:{output_file}}}"
-        )  # Use outs for DVC output
+        content_parts.append(f"output_path: ${{outs:{output_file}}}")  # Use outs for DVC output
     if input_file:
-        content_parts.append(
-            f"input_path: ${{deps:{input_file}}}"
-        )  # Use deps for DVC dependency
+        content_parts.append(f"input_path: ${{deps:{input_file}}}")  # Use deps for DVC dependency
     content_parts.append(f"some_param: {param_value}")
     return "\n".join(content_parts)
 

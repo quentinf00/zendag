@@ -28,9 +28,7 @@ def deps_path(
         if input_name is None:
             raise ValueError("input_name must be specified if input_stage is provided.")
         if stage_dir_fn is None:
-            raise ValueError(
-                "stage_dir_fn must be provided if input_stage/input_name are used."
-            )
+            raise ValueError("stage_dir_fn must be provided if input_stage/input_name are used.")
         base_dir = stage_dir_fn(input_stage, input_name) + "/"
     else:
         base_dir = ""

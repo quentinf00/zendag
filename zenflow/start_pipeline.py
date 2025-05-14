@@ -13,6 +13,4 @@ def start_pipeline(run_name, project_name, dvc_root):
 if __name__ == "__main__":
     hydra_zen.store(start_pipeline)
     hydra_zen.store.add_to_hydra_store()
-    hydra_zen.zen(start_pipeline).hydra_main(
-        config_name="start_pipeline", version_base="1.3"
-    )
+    hydra_zen.zen(start_pipeline).hydra_main(config_name="start_pipeline", version_base="1.3")

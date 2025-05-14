@@ -33,9 +33,7 @@ def setup_hydra_for_compose(temp_cwd):
     """Ensure hydra can compose from the temp directory"""
     # configure_pipeline does hydra.initialize itself, but if individual tests need it:
     if not hydra.core.global_hydra.GlobalHydra.instance().is_initialized():
-        hydra.initialize(
-            version_base="1.3", config_path=None
-        )  # Initialize relative to CWD
+        hydra.initialize(version_base="1.3", config_path=None)  # Initialize relative to CWD
     yield
     if hydra.core.global_hydra.GlobalHydra.instance().is_initialized():
         hydra.core.global_hydra.GlobalHydra.instance().clear()
@@ -83,15 +81,11 @@ def test_configure_pipeline_single_stage_no_deps(
     composed_cfg = OmegaConf.load(composed_config_path)
     print(OmegaConf.to_yaml(composed_cfg))
     composed_cfg = OmegaConf.select(composed_cfg, stage_name)
-    assert (
-        composed_cfg._target_ == "tests.test_core.dummy_stage_function"
-    )  # Path to dummy_stage_function
+    assert composed_cfg._target_ == "tests.test_core.dummy_stage_function"  # Path to dummy_stage_function
     assert composed_cfg.some_param == 10
     # Check that 'outs' resolved correctly during write (it won't be in the written file, but was used for path)
     # The path in the config should be the resolved one (relative to its own output dir)
-    assert (
-        composed_cfg.output_path == output_file
-    )  # outs should resolve to the filename itself
+    assert composed_cfg.output_path == output_file  # outs should resolve to the filename itself
 
     # 2. Check dvc.yaml was written
     dvc_file_path = temp_cwd / "dvc_test.yaml"
@@ -139,9 +133,7 @@ def test_configure_pipeline_with_inter_stage_deps(
     # Stage 2 depends on stage 1's output
     # For deps to resolve correctly, the hydra resolver for 'stage_dir' needs to be active
     # and the stage_dir_fn for that needs to be the one used by configure_pipeline
-    stage_dir_func = test_project_stage_dir_fn(
-        temp_artifacts_dir
-    )  # This will be used by deps resolver
+    stage_dir_func = test_project_stage_dir_fn(temp_artifacts_dir)  # This will be used by deps resolver
 
     ProcessDataConfig = hydra_zen.builds(
         dummy_stage_function,
@@ -177,16 +169,12 @@ def test_configure_pipeline_with_inter_stage_deps(
     assert dvc_stage2_key in dvc_data["stages"]
     stage2_info = dvc_data["stages"][dvc_stage2_key]
 
-    expected_stage1_output_path_in_dvc_deps = str(
-        temp_artifacts_dir / stage1_name / config1_name / stage1_output
-    )
+    expected_stage1_output_path_in_dvc_deps = str(temp_artifacts_dir / stage1_name / config1_name / stage1_output)
     assert stage2_info["deps"] == [expected_stage1_output_path_in_dvc_deps]
     assert stage2_info["outs"] == [stage2_output]
 
     # Check composed config for stage 2
-    composed_stage2_config_path = (
-        temp_artifacts_dir / stage2_name / f"{config2_name}.yaml"
-    )
+    composed_stage2_config_path = temp_artifacts_dir / stage2_name / f"{config2_name}.yaml"
     assert composed_stage2_config_path.exists()
     s2_cfg = OmegaConf.load(composed_stage2_config_path)
     # The input_path in the *written* config file should be resolved relative to nothing (i.e., the full path)
@@ -210,10 +198,7 @@ def test_configure_pipeline_empty_stage_group(
         stage_dir_fn=test_project_stage_dir_fn(temp_artifacts_dir),
         configs_dir_fn=test_project_configs_dir_fn(temp_artifacts_dir),
     )
-    assert (
-        "No configurations found in store for stage group: 'non_existent_stage'"
-        in caplog.text
-    )
+    assert "No configurations found in store for stage group: 'non_existent_stage'" in caplog.text
     dvc_file = temp_cwd / "dvc.yaml"  # Default name
     assert dvc_file.exists()  # Should still create an empty dvc.yaml
     with open(dvc_file, "r") as f:

@@ -91,9 +91,7 @@ def configure_pipeline(
             _log.warning(f"No configurations found in store for stage group: '{stage}'")
             continue
 
-        _log.info(
-            f"Processing stage group '{stage}' with {len(stage_items)} configuration(s)..."
-        )
+        _log.info(f"Processing stage group '{stage}' with {len(stage_items)} configuration(s)...")
 
         for _, name in stage_items:
             stage_key = (stage, name)
@@ -102,9 +100,7 @@ def configure_pipeline(
             # 1. Compose the configuration
             try:
                 cfg = hydra.compose(overrides=[f"+{stage}={name}"])
-                _log.debug(
-                    f"  Successfully composed configuration for '{stage}/{name}'."
-                )
+                _log.debug(f"  Successfully composed configuration for '{stage}/{name}'.")
             except Exception as e:
                 _log.error(
                     f"  Failed to compose configuration for '{stage}/{name}'. Error: {e}",
@@ -130,19 +126,13 @@ def configure_pipeline(
 
             # IMPORTANT: Register resolvers *before* resolve call
             # These resolvers have side-effects (appending to lists)
-            OmegaConf.register_new_resolver(
-                "outs", lambda k: current_outs.append(k) or k, replace=True
-            )
-            OmegaConf.register_new_resolver(
-                "deps", lambda k: current_deps.append(k) or k, replace=True
-            )
+            OmegaConf.register_new_resolver("outs", lambda k: current_outs.append(k) or k, replace=True)
+            OmegaConf.register_new_resolver("deps", lambda k: current_deps.append(k) or k, replace=True)
             # Hydra resolver needs the runtime context for the *specific* stage instance
             OmegaConf.register_new_resolver(
                 "hydra",
                 lambda k, _parent_, _root_: OmegaConf.select(
-                    OmegaConf.create(
-                        {"runtime": {"output_dir": stage_dir_fn(stage, name)}}
-                    ),
+                    OmegaConf.create({"runtime": {"output_dir": stage_dir_fn(stage, name)}}),
                     k,
                     throw_on_missing=True,
                 ),
@@ -156,9 +146,7 @@ def configure_pipeline(
                 replace=True,
             )
 
-            _log.debug(
-                f"  Resolving configuration for '{stage}/{name}' to discover dependencies and outputs..."
-            )
+            _log.debug(f"  Resolving configuration for '{stage}/{name}' to discover dependencies and outputs...")
             try:
                 OmegaConf.resolve(cfg)
                 # Make unique and sort for consistency
@@ -189,9 +177,7 @@ def configure_pipeline(
                 ),
                 deps=all_deps[stage_key],
                 outs=all_outs[stage_key],
-                params=[
-                    {f"{composed_config_path.as_posix()}": None}
-                ],  # Use as_posix for consistency
+                params=[{f"{composed_config_path.as_posix()}": None}],  # Use as_posix for consistency
             )
             _log.debug(f"  Defined DVC stage '{dvc_stage_name}'.")
 
@@ -202,11 +188,7 @@ def configure_pipeline(
         dvc_data = {"stages": dvc_stages}
         # Convert DictConfig back to primitive types suitable for pyyaml dump if needed
         # or use OmegaConf.save if hydra_zen.to_yaml doesn't handle it well (it should)
-        dvc_file.write_text(
-            hydra_zen.to_yaml(dvc_data)
-        )  # hydra-zen's yaml dump is generally good
+        dvc_file.write_text(hydra_zen.to_yaml(dvc_data))  # hydra-zen's yaml dump is generally good
         _log.info(f"Successfully wrote DVC pipeline configuration to: {dvc_file}")
     except Exception as e:
-        _log.error(
-            f"Failed to write DVC pipeline file {dvc_file}. Error: {e}", exc_info=True
-        )
+        _log.error(f"Failed to write DVC pipeline file {dvc_file}. Error: {e}", exc_info=True)

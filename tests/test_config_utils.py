@@ -18,10 +18,7 @@ def test_deps_path_with_stage_and_name():
         return f"mock_artifacts/{stage}/{name}"
 
     expected = "${deps:mock_artifacts/prev_stage/config1/input.txt}"
-    assert (
-        deps_path("input.txt", "prev_stage", "config1", stage_dir_fn=dummy_stage_dir_fn)
-        == expected
-    )
+    assert deps_path("input.txt", "prev_stage", "config1", stage_dir_fn=dummy_stage_dir_fn) == expected
 
 
 def test_deps_path_missing_input_name():
