@@ -70,6 +70,17 @@ def configure_pipeline(
     else:
         hydra.initialize(version_base="1.3")
 
+    try:
+        store.add_to_hydra_store()
+        _log.debug(
+            f"  Successfully added store configurations to hydra"
+        )
+    except Exception as e:
+        _log.error(
+            f"  Failed add store configurations to hydra'. Error: {e}",
+            exc_info=True,
+        )
+        raise e
     _log.info(f"Processing stage groups: {stage_groups}")
 
     for stage in stage_groups:

@@ -1,4 +1,5 @@
 # tests/conftest.py
+import hydra
 import pytest
 from pathlib import Path
 import shutil
@@ -55,12 +56,28 @@ def create_dummy_hydra_config_content(
     return "\n".join(content_parts)
 
 # --- Custom Project Directory Functions for Testing ---
-def test_project_stage_dir_fn(artifacts_root: Path):
+def test_project_stage_dir_fn(temp_artifacts_dir: Path):
     def fn(stage: str, name: str) -> str:
-        return str(artifacts_root / stage / name)
+        return str(temp_artifacts_dir / stage / name)
     return fn
 
-def test_project_configs_dir_fn(artifacts_root: Path):
+def test_project_configs_dir_fn(temp_artifacts_dir: Path):
     def fn(stage: str) -> str:
-        return str(artifacts_root / stage)
+        return str(temp_artifacts_dir / stage)
     return fn
+
+@pytest.fixture(autouse=True) # autouse=True will apply this to all tests by default
+def hydra_global_state_cleanup():
+    """
+    Ensures Hydra's global state is clean before and after each test
+    if it was initialized.
+    """
+    # Before the test:
+    # Optional: Could clear here if a previous non-test interaction left it initialized,
+    # but typically, tests initialize it themselves if needed.
+
+    yield # This is where the test runs
+
+    # After the test:
+    if hydra.core.global_hydra.GlobalHydra.instance().is_initialized():
+        hydra.core.global_hydra.GlobalHydra.instance().clear()

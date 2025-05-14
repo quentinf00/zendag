@@ -1,12 +1,13 @@
 # .github/workflows/zenflow-package-ci.yml
-name: ZenFlow Package CI
+# .github/workflows/zenflow-package-ci.yml
+name: ZenFlow Package CI & Docs
 
 on:
   push:
     branches:
       - main
       - develop
-    paths: # Trigger only if zenflow package files change
+    paths:
       - 'zenflow/**'
       - '.github/workflows/zenflow-package-ci.yml'
   pull_request:
@@ -16,13 +17,15 @@ on:
     paths:
       - 'zenflow/**'
       - '.github/workflows/zenflow-package-ci.yml'
+  workflow_dispatch: # Allows manual triggering
 
 jobs:
   lint-and-test:
+    # ... (same as before) ...
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11'] # Test against supported Python versions
+        python-version: ['3.8', '3.9', '3.10', '3.11']
 
     steps:
       - name: Checkout repository
@@ -33,34 +36,35 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install Hatch (build backend) and dependencies
-        working-directory: ./zenflow # Important: operations relative to zenflow package
+      - name: Install Hatch and dependencies
+        working-directory: ./zenflow
         run: |
           python -m pip install --upgrade pip
           pip install hatch
-          hatch env create # Creates default test environment based on pyproject.toml
+          hatch env create # Creates default test environment
 
       - name: Lint with Ruff (via Hatch)
         working-directory: ./zenflow
-        run: hatch run lint:all # Assuming 'lint:all' script in hatch/pyproject.toml for ruff check and format --check
+        run: hatch run lint:all
 
       - name: Run tests with Pytest (via Hatch)
         working-directory: ./zenflow
-        run: hatch run test:cov # Assuming 'test:cov' script for pytest with coverage
+        run: hatch run test:cov
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
-        if: matrix.python-version == '3.10' # Only upload from one Python version job
+        if: matrix.python-version == '3.10'
         with:
-          token: ${{ secrets.CODECOV_TOKEN }} # Add this to your GitHub repository secrets
-          files: ./zenflow/coverage.xml # Adjust path if necessary
-          working-directory: ./zenflow # Ensure Codecov action looks in the right place
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./zenflow/coverage.xml
+          working-directory: ./zenflow
           fail_ci_if_error: true
 
   build-package:
+    # ... (same as before, ensure it depends on lint-and-test) ...
     runs-on: ubuntu-latest
-    needs: lint-and-test # Run only if linting and tests pass
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' # Build only on push to main
+    needs: lint-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout repository
@@ -69,20 +73,63 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10' # Or your primary build Python version
+          python-version: '3.10'
 
       - name: Install Hatch
         run: pip install hatch
 
       - name: Build package
         working-directory: ./zenflow
-        run: hatch build # This creates sdist and wheel in zenflow/dist/
+        run: hatch build
 
       - name: Store package artifacts
         uses: actions/upload-artifact@v4
         with:
           name: zenflow-package-${{ github.sha }}
           path: zenflow/dist/*
+
+  build-and-deploy-docs:
+    runs-on: ubuntu-latest
+    needs: lint-and-test # Docs build should happen after tests pass
+    # Only build and deploy docs on pushes to the main branch
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write # Required to push to gh-pages branch
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetches all history for deploying to gh-pages
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10' # Or your preferred Python version for docs
+
+      - name: Install Hatch and documentation dependencies
+        working-directory: ./zenflow
+        run: |
+          pip install hatch
+          # Create or use an environment that includes 'docs' optional dependencies
+          hatch env create docs-env --feature docs # Create a specific env for docs
+          # Or if your default hatch env includes docs: hatch env create
+
+      - name: Build documentation
+        working-directory: ./zenflow
+        run: hatch run docs-env:docs-build # Run the 'docs-build' script in 'docs-env'
+        # If docs are in the default env: hatch run default:docs-build
+
+      - name: Deploy documentation to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3 # Popular action for deploying to gh-pages
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./zenflow/docs/_build/html # Path to the built HTML docs
+          # user_name: 'github-actions[bot]' # Optional: customize commit user
+          # user_email: 'github-actions[bot]@users.noreply.github.com' # Optional
+          # cname: docs.yourdomain.com # Optional: if you use a custom domain
+          publish_branch: gh-pages # The branch to deploy to
+          force_orphan: true # Creates a clean gh-pages branch history
 
   # Optional: Publish to PyPI (or other index)
   # publish-to-pypi:

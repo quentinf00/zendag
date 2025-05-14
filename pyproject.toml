@@ -26,8 +26,16 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: System :: Archiving :: Version Control", # For DVC aspect
     "Topic :: Utilities",
+]
+dependencies = [
+    "hydra-zen>=0.14.0,<1.0", # Check latest compatible version
+    "mlflow>=2.0.0,<4.0", # Check latest stable MLflow
+    "pandas>=1.3.0,<3.0", # For parameter normalization in mlflow_utils
+    "toolz>=0.11.0,<1.0", # If still used by configure_pipeline (was in original)
+    # DVC is a CLI tool used *with* zenflow, not usually a direct library dependency
+    # unless you plan to call DVC Python API directly from zenflow, which is uncommon.
+    # Users will install DVC separately via pip or their package manager.
 ]
 # zenflow/pyproject.toml
 [tool.hatch.envs.default.scripts]
@@ -37,18 +45,12 @@ lint-all = [
   "ruff format --check .",
   "ruff check .",
 ]
+docs-build = "sphinx-build -b html docs docs/_build/html {args}"
+docs-clean = "rm -rf docs/_build"
+
 [tool.hatch.metadata]
 allow-direct-references = true
 
-dependencies = [
-    "hydra-zen>=0.14.0,<1.0", # Check latest compatible version
-    "mlflow>=3.0.0,<4.0", # Check latest stable MLflow
-    "pandas>=1.3.0,<3.0", # For parameter normalization in mlflow_utils
-    "toolz>=0.11.0,<1.0", # If still used by configure_pipeline (was in original)
-    # DVC is a CLI tool used *with* zenflow, not usually a direct library dependency
-    # unless you plan to call DVC Python API directly from zenflow, which is uncommon.
-    # Users will install DVC separately via pip or their package manager.
-]
 
 [project.urls]
 Homepage = "https://github.com/quentinf00/zenflow" # Replace with actual URL

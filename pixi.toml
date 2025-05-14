@@ -9,3 +9,10 @@ version = "0.1.0"
 [tasks]
 
 [dependencies]
+python = "3.11.*"
+
+[feature.dev.pypi-dependencies]
+zenflow = {path= ".", extras=["dev"], editable=true}
+
+[environments]
+dev = ['dev']

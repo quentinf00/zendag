@@ -3,6 +3,7 @@ import pytest
 from pathlib import Path
 import yaml # For parsing dvc.yaml
 from omegaconf import OmegaConf, MissingMandatoryValue
+import omegaconf
 import hydra_zen
 import hydra # For hydra.initialize if needed, though configure_pipeline does it
 
@@ -15,10 +16,11 @@ from .conftest import (
 
 # A dummy target function for hydra-zen builds
 def dummy_stage_function(output_path: str, input_path: str = None, some_param: int = 0):
+    ...
     # In a real scenario, this function would do something.
     # For testing configure_pipeline, its existence is enough.
     # print(f"Dummy stage: out={output_path}, in={input_path}, param={some_param}")
-    return f"Processed {input_path} to {output_path} with {some_param}"
+    print(f"Processed {input_path} to {output_path} with {some_param}")
 
 
 @pytest.fixture
@@ -36,7 +38,6 @@ def test_configure_pipeline_single_stage_no_deps(
     temp_cwd: Path, # Changes CWD to temp_cwd
     temp_artifacts_dir: Path,
     zen_store: hydra_zen.ZenStore,
-    setup_hydra_for_compose
 ):
     # --- Define a simple stage config ---
     stage_name = "data_prep"
@@ -73,6 +74,8 @@ def test_configure_pipeline_single_stage_no_deps(
     composed_config_path = temp_artifacts_dir / stage_name / f"{config_name}.yaml"
     assert composed_config_path.exists()
     composed_cfg = OmegaConf.load(composed_config_path)
+    print(OmegaConf.to_yaml(composed_cfg))
+    composed_cfg = OmegaConf.select(composed_cfg, stage_name)
     assert composed_cfg._target_ == "tests.test_core.dummy_stage_function" # Path to dummy_stage_function
     assert composed_cfg.some_param == 10
     # Check that 'outs' resolved correctly during write (it won't be in the written file, but was used for path)
@@ -105,7 +108,6 @@ def test_configure_pipeline_with_inter_stage_deps(
     temp_cwd: Path,
     temp_artifacts_dir: Path,
     zen_store: hydra_zen.ZenStore,
-    setup_hydra_for_compose
 ):
     # --- Stage 1: generate_data ---
     stage1_name = "generate_data"
@@ -173,14 +175,13 @@ def test_configure_pipeline_with_inter_stage_deps(
     # The input_path in the *written* config file should be resolved relative to nothing (i.e., the full path)
     # because the `${deps:...}` resolver just returns `k` after appending to the list.
     # And `${stage_dir...}` resolves to the path.
-    assert s2_cfg.input_path == str(temp_artifacts_dir / stage1_name / config1_name / stage1_output)
+    assert OmegaConf.select(s2_cfg, stage2_name).input_path == str(temp_artifacts_dir / stage1_name / config1_name / stage1_output)
 
 
 def test_configure_pipeline_empty_stage_group(
     temp_cwd: Path,
     temp_artifacts_dir: Path,
     zen_store: hydra_zen.ZenStore,
-    setup_hydra_for_compose,
     caplog # To capture log messages
 ):
     caplog.set_level("WARNING")
@@ -202,7 +203,6 @@ def test_configure_pipeline_config_resolution_failure(
     temp_cwd: Path,
     temp_artifacts_dir: Path,
     zen_store: hydra_zen.ZenStore,
-    setup_hydra_for_compose,
     caplog
 ):
     caplog.set_level("ERROR")
@@ -218,20 +218,12 @@ def test_configure_pipeline_config_resolution_failure(
     )
     zen_store(group=stage_name)(BadConf, name=config_name)
 
-    configure_pipeline(
-        store=zen_store,
-        stage_groups=[stage_name],
-        stage_dir_fn=test_project_stage_dir_fn(temp_artifacts_dir),
-        configs_dir_fn=test_project_configs_dir_fn(temp_artifacts_dir),
-    )
+    with pytest.raises(omegaconf.errors.GrammarParseError):
+        configure_pipeline(
+            store=zen_store,
+            stage_groups=[stage_name],
+            stage_dir_fn=test_project_stage_dir_fn(temp_artifacts_dir),
+            configs_dir_fn=test_project_configs_dir_fn(temp_artifacts_dir),
+        )
 
-    assert f"Failed during config resolution for '{stage_name}/{config_name}'" in caplog.text
-    # Check that dvc.yaml still contains the stage, but with empty deps/outs
-    dvc_file_path = temp_cwd / "dvc.yaml"
-    assert dvc_file_path.exists()
-    with open(dvc_file_path, 'r') as f:
-        dvc_data = yaml.safe_load(f)
-    dvc_stage_key = f"{stage_name}/{config_name}"
-    assert dvc_stage_key in dvc_data["stages"]
-    assert dvc_data["stages"][dvc_stage_key]["deps"] == [] # Should be empty on failure
-    assert dvc_data["stages"][dvc_stage_key]["outs"] == []
+    assert f" Failed add store configurations to hydra" in caplog.text

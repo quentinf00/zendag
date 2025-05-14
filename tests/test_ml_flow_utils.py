@@ -53,19 +53,19 @@ def test_mlflow_run_success(
     # Mock Path for .pipeline_id, config file, and log file
     mock_pipeline_id_path_instance = MagicMock(spec=Path)
     mock_pipeline_id_path_instance.exists.return_value = False # Test creating .pipeline_id
-    mock_pipeline_id_path_instance.read_text.return_value.strip.return_value = "old_parent_run_id" # If it existed
+    mock_pipeline_id_path_instance.read_text.return_value = "old_parent_run_id" # If it existed
 
     mock_config_path_instance = MagicMock(spec=Path)
     mock_config_path_instance.exists.return_value = True
     mock_config_path_instance.as_posix.return_value = "artifacts/test_group/test_stage.yaml"
+    mock_config_path_instance.read_text.return_value = "artifacts/test_group/test_stage.yaml"
 
     # Mock hydra for log path (this is tricky as it uses Hydra's global state)
     # For simplicity, assume Hydra is initialized and provides the output_dir
     mock_hydra_config_get = MagicMock()
-    mock_hydra_config_get.get.return_value.runtime.output_dir = str(temp_cwd / "outputs/test_group/test_stage")
+    mock_hydra_config_get.get.return_value.runtime.output_dir = Path(temp_cwd / "artifacts/test_group/test_stage")
     mock_log_path_instance = MagicMock(spec=Path)
-    mock_log_path_instance.exists.return_value = True
-    mock_log_path_instance.as_posix.return_value = str(temp_cwd / "outputs/test_group/test_stage/run.log")
+    mock_log_path_instance.as_posix.return_value = str(temp_cwd / "artifacts/test_group/test_stage/run.log")
 
 
     def path_side_effect(path_arg):
@@ -81,7 +81,7 @@ def test_mlflow_run_success(
     MockPath.side_effect = path_side_effect
 
     # --- Decorate and Call ---
-    decorated_function = mlflow_run(sample_stage_function)
+    decorated_function = mlflow_run(sample_stage_function, project_name="TestProject")
     with patch("zenflow.mlflow_utils.hydra.core.hydra_config.HydraConfig", mock_hydra_config_get): # Mock Hydra's runtime
         result = decorated_function("test_arg")
 
@@ -103,7 +103,7 @@ def test_mlflow_run_success(
     mock_mlflow_module.log_param.assert_any_call("param1", "value1")
     mock_mlflow_module.log_param.assert_any_call("nested.param2", 10)
     mock_mlflow_module.log_artifact.assert_any_call("artifacts/test_group/test_stage.yaml")
-    mock_mlflow_module.log_artifact.assert_any_call(str(temp_cwd / "outputs/test_group/test_stage/run.log"))
+    mock_mlflow_module.log_artifact.assert_any_call(str(temp_cwd / "artifacts/test_group/test_stage/run.log"))
 
     # Check .pipeline_id was written
     mock_pipeline_id_path_instance.write_text.assert_called_once_with(mock_parent_run.info.run_id + "\n")
@@ -120,12 +120,37 @@ def test_mlflow_run_failure(
     mock_child_run = MagicMock()
     mock_mlflow_module.start_run.return_value.__enter__.side_effect = [mock_parent_run, mock_child_run]
 
-    MockPath.return_value.exists.return_value = True # Assume config and log files exist
-    MockPath.return_value.as_posix.return_value = "dummy/path/file.ext"
+    mock_pipeline_id_path_instance = MagicMock(spec=Path)
+    mock_pipeline_id_path_instance.exists.return_value = False # Test creating .pipeline_id
+    mock_pipeline_id_path_instance.read_text.return_value = "old_parent_run_id" # If it existed
+
+    mock_config_path_instance = MagicMock(spec=Path)
+    mock_config_path_instance.exists.return_value = True
+    mock_config_path_instance.as_posix.return_value = "artifacts/test_group/test_stage.yaml"
+    mock_config_path_instance.read_text.return_value = "artifacts/test_group/test_stage.yaml"
+
+    mock_log_path_instance = MagicMock(spec=Path)
+    mock_log_path_instance.as_posix.return_value = str(temp_cwd / "artifacts/test_group/test_stage/run.log")
+
+    def path_side_effect(path_arg):
+        if str(path_arg) == ".pipeline_id":
+            return mock_pipeline_id_path_instance
+        elif str(path_arg) == "artifacts/test_group/test_stage.yaml":
+            return mock_config_path_instance
+        elif "run.log" in str(path_arg): # General match for log path
+             # This needs to be more specific if Hydra path is complex
+            return mock_log_path_instance
+        return MagicMock(spec=Path) # Default mock for other Path calls
+
+    MockPath.side_effect = path_side_effect
     MockOmegaConf.load.return_value = OmegaConf.create({}) # Minimal config
 
     mock_hydra_config_get = MagicMock()
-    mock_hydra_config_get.get.return_value.runtime.output_dir = str(temp_cwd / "outputs/test_group/test_stage")
+    mock_hydra_config_get.get.return_value.runtime.output_dir = str(temp_cwd / "artifacts/test_group/test_stage")
+
+    mock_pipeline_id_path_instance = MagicMock(spec=Path)
+    mock_pipeline_id_path_instance.exists.return_value = False # Test creating .pipeline_id
+    mock_pipeline_id_path_instance.read_text.return_value = "old_parent_run_id" # If it existed
 
     decorated_function = mlflow_run(sample_stage_function)
     with pytest.raises(ValueError, match="Simulated failure"):
@@ -134,5 +159,5 @@ def test_mlflow_run_failure(
 
     # Assert that log artifact was still attempted on failure
     # The path to run.log needs to be correctly mocked via MockPath or HydraConfig mock
-    expected_log_path_str = str(Path(mock_hydra_config_get.get.return_value.runtime.output_dir) / "run.log")
-    mock_mlflow_module.log_artifact.assert_any_call(expected_log_path_str)
+    expected_log_path_str = str(Path(f'artifacts/test_group/test_stage') / "run.log")
+    mock_mlflow_module.log_artifact.assert_any_call( str(temp_cwd /expected_log_path_str))

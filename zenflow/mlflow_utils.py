@@ -9,10 +9,11 @@ import hydra  # To access Hydra's runtime config
 
 _log = logging.getLogger(__name__)
 
+ARTIFACTS_ROOT = os.getenv("ARTIFACTS_DIR", "artifacts")  # Default to "artifacts"
 
 def mlflow_run(
     wrapped_function,
-    project_name: str = os.environ.get("MLFLOW_PROJECT_NAME", "DefaultProject"),
+    project_name = os.environ.get("MLFLOW_PROJECT_NAME", "DefaultProject"),
 ):
     """
     Decorator to wrap a function execution within nested MLflow runs.
@@ -24,7 +25,6 @@ def mlflow_run(
     - Logs the Hydra run log file (run.log) as an artifact upon completion or failure.
     - Handles exceptions and ensures logs are captured if possible.
     """
-
     @wraps(wrapped_function)
     def wrapper(*args, **kwargs):
         parent_run_id = None
@@ -33,13 +33,13 @@ def mlflow_run(
             parent_run_id = pipeline_id_file.read_text().strip()
             os.environ["MLFLOW_RUN_ID"] = parent_run_id
             _log.info(f"Found parent run ID in .pipeline_id: {parent_run_id}")
-
-        if not project_name:
+        current_mlflow_project_name = project_name
+        if not current_mlflow_project_name:
             _log.warning("MLFLOW_PROJECT_NAME not set. Using 'DefaultProject'.")
-            project_name = "DefaultProject"
+            current_mlflow_project_name = "DefaultZenFlowProject"
 
-        mlflow.set_experiment(project_name)
-        _log.info(f"Using MLflow experiment: '{project_name}'")
+        mlflow.set_experiment(current_mlflow_project_name)
+        _log.info(f"Using MLflow experiment: '{current_mlflow_project_name}'")
 
         # DVC sets this environment variable during `dvc repro` or `dvc exp run`
         dvc_stage_name = os.environ.get(
@@ -73,7 +73,7 @@ def mlflow_run(
                             # Use the same logic as configure_pipeline (needs access to configs_dir_fn)
                             # Simplification: Assume standard 'artifacts/' structure for now
                             # TODO: Make config path resolution more robust (maybe pass via env?)
-                            config_path = Path(f"artifacts/{stage}/{config_name}.yaml")
+                            config_path = Path(f"{ARTIFACTS_ROOT}/{stage}/{config_name}.yaml")
 
                             if config_path.exists():
                                 _log.info(f"Logging config from: {config_path}")
@@ -127,11 +127,8 @@ def mlflow_run(
                         # Log run.log artifact even on failure
                         log_path = (
                             Path(
-                                hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+                                f"{ARTIFACTS_ROOT}/{stage}/{config_name}/run.log"
                             )
-                            / "run.log"
-                            if hydra.core.hydra_config.HydraConfig.initialized()
-                            else None
                         )
                         if log_path and log_path.exists():
                             _log.info(f"Logging run log on failure: {log_path}")
@@ -141,11 +138,8 @@ def mlflow_run(
                     # Log run.log artifact on success
                     log_path = (
                         Path(
-                            hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+                            f"{ARTIFACTS_ROOT}/{stage}/{config_name}/run.log"
                         )
-                        / "run.log"
-                        if hydra.core.hydra_config.HydraConfig.initialized()
-                        else None
                     )
                     if log_path and log_path.exists():
                         _log.info(f"Logging run log on success: {log_path}")
