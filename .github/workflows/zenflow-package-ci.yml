@@ -109,15 +109,13 @@ jobs:
 
       - name: Install Hatch and documentation dependencies
         if: ${{ !env.ACT }}
-        working-directory: ./zenflow
         run: |
           pip install hatch
           # Create or use an environment that includes 'docs' optional dependencies
-          hatch env create  # Create a specific env for docs
+          hatch env create docs # Create a specific env for docs
 
       - name: Build documentation
-        working-directory: ./zenflow
-        run: hatch run docs-build # Run the 'docs-build' script in 'docs-env'
+        run: hatch run docs:docs-build # Run the 'docs-build' script in 'docs-env'
         # If docs are in the default env: hatch run default:docs-build
 
       - name: Deploy documentation to GitHub Pages
@@ -125,7 +123,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3 # Popular action for deploying to gh-pages
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./zenflow/docs/_build/html # Path to the built HTML docs
+          publish_dir: ./docs/_build/html # Path to the built HTML docs
           # user_name: 'github-actions[bot]' # Optional: customize commit user
           # user_email: 'github-actions[bot]@users.noreply.github.com' # Optional
           # cname: docs.yourdomain.com # Optional: if you use a custom domain

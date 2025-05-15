@@ -37,6 +37,17 @@ dependencies = [
     # Users will install DVC separately via pip or their package manager.
 ]
 # zenflow/pyproject.toml
+[tool.hatch.envs.docs]
+dependencies = [
+    "sphinx>=5.0",
+    "sphinx-rtd-theme>=1.0", # Or another theme
+    "myst-parser>=0.18", # For Markdown support in Sphinx
+
+]
+[tool.hatch.envs.docs.scripts]
+docs-build = "sphinx-build -b html docs docs/_build/html -env:d{args}"
+docs-clean = "rm -rf docs/_build"
+
 [tool.hatch.envs.default.scripts]
 test = "pytest {args:tests}"
 test-cov = "pytest --cov=zenflow --cov-report=xml --cov-report=term-missing {args:tests}"
@@ -44,8 +55,6 @@ lint-all = [
   "ruff format --check zenflow tests",
 #   "ruff check zenflow tests",
 ]
-docs-build = "sphinx-build -b html docs docs/_build/html {args}"
-docs-clean = "rm -rf docs/_build"
 
 [tool.hatch.metadata]
 allow-direct-references = true
