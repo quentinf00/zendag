@@ -117,7 +117,7 @@ jobs:
 
       - name: Build documentation
         working-directory: ./zenflow
-        run: hatch run docs-env:docs-build # Run the 'docs-build' script in 'docs-env'
+        run: hatch run docs-build # Run the 'docs-build' script in 'docs-env'
         # If docs are in the default env: hatch run default:docs-build
 
       - name: Deploy documentation to GitHub Pages
