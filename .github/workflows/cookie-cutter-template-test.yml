@@ -1,0 +1,129 @@
+# .github/workflows/cookiecutter-template-test.yml
+name: Cookiecutter Template Test
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths: # Trigger if template files change
+      - 'cookiecutter-zenflow-template/**'
+      - '.github/workflows/cookiecutter-template-test.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'cookiecutter-zenflow-template/**'
+      - '.github/workflows/cookiecutter-template-test.yml'
+
+jobs:
+  generate-and-test-project:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10'] # Test with one representative Python version for speed
+        # You could add more dimensions here, e.g., different cookiecutter options if they significantly change the workflow
+        # create_example_stage: ['yes', 'no'] # Example, if 'no' has a different minimal test path
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Pixi
+        uses: prefix-dev/setup-pixi@v0.5.0 # Or use official install script
+        with:
+          cache: true # Enable caching for pixi environments
+
+      - name: Set up Python (for Cookiecutter itself)
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Cookiecutter
+        run: pip install cookiecutter
+
+      - name: Generate project from template
+        id: generate
+        run: |
+          # Use default values, or override some for testing specific scenarios
+          # For example, if you want to test with the example stage:
+          # --default-config can be used but is tricky with complex types.
+          # It's often easier to create a .cookiecutterrc or pass individual options.
+          # Here we use no_input to accept defaults.
+          # If your defaults create the example stage, this is fine.
+          # Otherwise, you might need to pass specific options.
+          cookiecutter --no-input ./cookiecutter-zenflow-template project_slug="test_generated_project"
+          # If you need to pass options:
+          # cookiecutter --no-input ./cookiecutter-zenflow-template project_slug="test_generated_project_with_example" create_example_stage="yes"
+          echo "Generated project in directory: test_generated_project"
+          echo "project_path=test_generated_project" >> $GITHUB_OUTPUT
+
+      - name: Test generated project with Pixi
+        # This is the crucial part: CD into the generated project and run its tasks
+        working-directory: ${{ steps.generate.outputs.project_path }}
+        env:
+          # Set environment variables that might be needed by the generated project's pixi.toml or tasks
+          # These typically come from cookiecutter.json defaults or user input
+          MLFLOW_TRACKING_URI: "sqlite:///mlflow.db" # Use a local sqlite for CI testing
+          MLFLOW_PROJECT_NAME: "ci_test_project"
+          # Ensure PYTHONPATH includes src if tasks need it (pixi.toml should handle this for its own tasks)
+          # GITHUB_ACTIONS: true # Useful for scripts to know they are in CI
+
+        run: |
+          echo "--- Initializing Pixi environment in generated project ---"
+          pixi install --frozen # Use frozen if lock file exists and you want to test that exact env
+          # OR pixi install if you want to resolve based on pixi.toml (more common for initial setup)
+
+          echo "--- Running 'pixi run configure' in generated project ---"
+          pixi run configure
+          # Check if dvc.yaml was created
+          if [ ! -f dvc.yaml ]; then
+            echo "::error file=${{ steps.generate.outputs.project_path }}/dvc.yaml::dvc.yaml not found after running configure."
+            exit 1
+          fi
+          echo "dvc.yaml content:"
+          cat dvc.yaml
+
+          # If create_example_stage was 'yes' (or default is 'yes')
+          # The following tests the example stage pipeline
+          # Add a condition if this part is optional based on cookiecutter choice
+          # if [ "${{ matrix.create_example_stage }}" == "yes" ]; then
+          echo "--- (Attempting to) Run 'pixi run pipeline' for example stage ---"
+          # Initialize DVC if not done by `pixi run configure` or `pixi install`
+          # The template's `configure.py` or a pixi task might do `dvc init --no-scm` if needed
+          # For CI, ensure DVC is initialized:
+          if [ ! -d ".dvc" ]; then
+            echo "Initializing DVC..."
+            dvc init --no-scm
+          fi
+
+          # The example stage might need a dummy input file if not created by a previous DVC stage
+          # The example `configure.py` creates a dummy `data/raw/input_data.csv`
+          # Ensure its dependencies are met (e.g., create a dummy raw input if the stage expects it)
+          # mkdir -p data/raw
+          # echo "id,value\n1,10\n2,20" > data/raw/input_data.csv
+          # dvc add data/raw/input_data.csv # If it's a DVC tracked input for the example stage
+
+          pixi run pipeline
+          # Check for expected output artifacts of the example stage if applicable
+          # For example, if the example stage creates artifacts/process_data/default/processed/processed_data.csv
+          if [ ! -f "artifacts/process_data/default/processed/processed_data.csv" ]; then
+             echo "::warning file=${{ steps.generate.outputs.project_path }}/artifacts/process_data/default/processed/processed_data.csv::Example stage output not found."
+             # Decide if this should be an error or just a warning
+             # exit 1
+          else
+             echo "Example stage output found."
+          fi
+          # fi
+
+          echo "--- Running linters/formatters in generated project ---"
+          pixi run lint
+          # pixi run fmt # fmt changes files, usually just check format in CI: ruff format --check .
+
+      - name: Archive generated project for inspection (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failed-generated-project-${{ matrix.python-version }}
+          path: ${{ steps.generate.outputs.project_path }}
