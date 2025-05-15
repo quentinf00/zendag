@@ -113,7 +113,7 @@ jobs:
         run: |
           pip install hatch
           # Create or use an environment that includes 'docs' optional dependencies
-          hatch env create docs-env --feature docs # Create a specific env for docs
+          hatch env create docs-env  # Create a specific env for docs
           # Or if your default hatch env includes docs: hatch env create
 
       - name: Build documentation
