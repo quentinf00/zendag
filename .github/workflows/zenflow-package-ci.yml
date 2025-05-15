@@ -113,8 +113,7 @@ jobs:
         run: |
           pip install hatch
           # Create or use an environment that includes 'docs' optional dependencies
-          hatch env create docs-env  # Create a specific env for docs
-          # Or if your default hatch env includes docs: hatch env create
+          hatch env create  # Create a specific env for docs
 
       - name: Build documentation
         working-directory: ./zenflow
