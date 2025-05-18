@@ -1797,7 +1797,7 @@ packages:
 - pypi: .
   name: zenflow
   version: 0.1.0
-  sha256: 12cfd23986e0668cd9d1eb9d63a8ffe70f59edb6e7700ec734a7672d5036d730
+  sha256: ee86e58fa26d482f3f4dbc06cd4cb45786e3f0b23d885e91f8e9380712812b8b
   requires_dist:
   - hydra-zen>=0.14.0,<1.0
   - mlflow>=2.0.0,<4.0
@@ -1808,9 +1808,13 @@ packages:
   - ruff>=0.1.0 ; extra == 'dev'
   - mypy>=1.0 ; extra == 'dev'
   - pre-commit>=3.0 ; extra == 'dev'
-  - sphinx>=5.0 ; extra == 'docs'
-  - sphinx-rtd-theme>=1.0 ; extra == 'docs'
-  - myst-parser>=0.18 ; extra == 'docs'
+  - sphinx>=5.0,<8.0 ; extra == 'docs'
+  - sphinx-rtd-theme>=1.0,<2.0 ; extra == 'docs'
+  - myst-nb>=0.17,<1.1 ; extra == 'docs'
+  - sphinx-copybutton>=0.5,<0.6 ; extra == 'docs'
+  - sphinx-autodoc-typehints>=1.20,<2.0 ; extra == 'docs'
+  - jupyter-client ; extra == 'docs'
+  - ipykernel ; extra == 'docs'
   requires_python: '>=3.9'
   editable: true
 - pypi: https://files.pythonhosted.org/packages/b7/1a/7e4798e9339adc931158c9d69ecc34f5e6791489d469f5e50ec15e35f458/zipp-3.21.0-py3-none-any.whl

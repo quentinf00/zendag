@@ -86,49 +86,49 @@ jobs:
           name: zenflow-package-${{ github.sha }}
           path: dist/*
 
-  build-and-deploy-docs:
+ build-and-deploy-docs:
     runs-on: ubuntu-latest
-    needs: lint-and-test # Docs build should happen after tests pass
-    # Only build and deploy docs on pushes to the main branch
+    needs: lint-and-test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
-      contents: write # Required to push to gh-pages branch
+      contents: write
 
     steps:
       - name: Checkout repository
-        if: ${{ !env.ACT }}
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetches all history for deploying to gh-pages
+          fetch-depth: 0
 
       - name: Set up Python
-        if: ${{ !env.ACT }}
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10' # Or your preferred Python version for docs
+          python-version: '3.10' # Match Python version for docs build
 
       - name: Install Hatch and documentation dependencies
-        if: ${{ !env.ACT }}
+        working-directory: ./zenflow # All operations within the zenflow package directory
         run: |
           pip install hatch
-          # Create or use an environment that includes 'docs' optional dependencies
-          hatch env create docs # Create a specific env for docs
+          # Create and activate the 'docs' environment defined in pyproject.toml
+          hatch env create docs # This uses [tool.hatch.envs.docs] and its features
+          # Ensure the local zenflow package is installed editably in this env
+          # Hatch might do this automatically with "zenflow @ {root:uri}" in docs deps
+          # or you can force it:
+          # hatch run docs:pip install -e .
 
       - name: Build documentation
-        run: hatch run docs:docs-build # Run the 'docs-build' script in 'docs-env'
-        # If docs are in the default env: hatch run default:docs-build
+        working-directory: ./zenflow
+        run: hatch run docs:docs-build # Execute 'docs-build' script within 'docs' hatch env
 
       - name: Deploy documentation to GitHub Pages
-        if: ${{ !env.ACT }}
-        uses: peaceiris/actions-gh-pages@v3 # Popular action for deploying to gh-pages
+        uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/_build/html # Path to the built HTML docs
-          # user_name: 'github-actions[bot]' # Optional: customize commit user
-          # user_email: 'github-actions[bot]@users.noreply.github.com' # Optional
-          # cname: docs.yourdomain.com # Optional: if you use a custom domain
-          publish_branch: gh-pages # The branch to deploy to
-          force_orphan: true # Creates a clean gh-pages branch history
+          publish_dir: ./zenflow/docs/_build/html # Path to built HTML, relative to repo root
+          publish_branch: gh-pages
+          force_orphan: true 
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write # Required to push to gh-pages branch
 
   # Optional: Publish to PyPI (or other index)
   # publish-to-pypi:
