@@ -116,7 +116,6 @@ jobs:
           # hatch run docs:pip install -e .
 
       - name: Build documentation
-        working-directory: ./zenflow
         run: hatch run docs:docs-build # Execute 'docs-build' script within 'docs' hatch env
 
       - name: Deploy documentation to GitHub Pages
