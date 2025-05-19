@@ -86,7 +86,7 @@ jobs:
           name: zenflow-package-${{ github.sha }}
           path: dist/*
 
- build-and-deploy-docs:
+  build-and-deploy-docs:
     runs-on: ubuntu-latest
     needs: lint-and-test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -126,9 +126,6 @@ jobs:
           publish_dir: ./zenflow/docs/_build/html # Path to built HTML, relative to repo root
           publish_branch: gh-pages
           force_orphan: true 
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    permissions:
-      contents: write # Required to push to gh-pages branch
 
   # Optional: Publish to PyPI (or other index)
   # publish-to-pypi:
