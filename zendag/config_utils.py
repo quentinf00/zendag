@@ -1,6 +1,7 @@
 import logging
 from typing import Optional
 from .core import default_stage_dir_fn
+
 _log = logging.getLogger(__name__)
 
 
@@ -9,7 +10,7 @@ _log = logging.getLogger(__name__)
 def outs_path(s: str, root_dir: bool = False) -> str:
     """Returns the formatted string for DVC outputs."""
     base_dir = "." if root_dir else "${hydra:runtime.output_dir}"
-    return "${outs:" +  base_dir + "/" + s + "}"
+    return "${outs:" + base_dir + "/" + s + "}"
 
 
 def deps_path(
