@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from omegaconf import OmegaConf
 
-from zenflow.mlflow_utils import mlflow_run
+from zendag.mlflow_utils import mlflow_run
 
 
 # A simple function to be decorated
@@ -26,10 +26,10 @@ def mock_mlflow_env(monkeypatch):
     monkeypatch.setenv("HYDRA_CONFIG_NAME", "test_stage")
 
 
-@patch("zenflow.mlflow_utils.mlflow")  # Mock the entire mlflow module
-@patch("zenflow.mlflow_utils.OmegaConf")
-@patch("zenflow.mlflow_utils.pd")
-@patch("zenflow.mlflow_utils.Path")  # To control Path().exists() etc.
+@patch("zendag.mlflow_utils.mlflow")  # Mock the entire mlflow module
+@patch("zendag.mlflow_utils.OmegaConf")
+@patch("zendag.mlflow_utils.pd")
+@patch("zendag.mlflow_utils.Path")  # To control Path().exists() etc.
 def test_mlflow_run_success(MockPath, MockPandas, MockOmegaConf, mock_mlflow_module, mock_mlflow_env, temp_cwd):
     # --- Setup Mocks ---
     # Mock MLflow context managers
@@ -85,7 +85,7 @@ def test_mlflow_run_success(MockPath, MockPandas, MockOmegaConf, mock_mlflow_mod
     # --- Decorate and Call ---
     decorated_function = mlflow_run(sample_stage_function, project_name="TestProject")
     with patch(
-        "zenflow.mlflow_utils.hydra.core.hydra_config.HydraConfig",
+        "zendag.mlflow_utils.hydra.core.hydra_config.HydraConfig",
         mock_hydra_config_get,
     ):  # Mock Hydra's runtime
         result = decorated_function("test_arg")
@@ -114,9 +114,9 @@ def test_mlflow_run_success(MockPath, MockPandas, MockOmegaConf, mock_mlflow_mod
     mock_pipeline_id_path_instance.write_text.assert_called_once_with(mock_parent_run.info.run_id + "\n")
 
 
-@patch("zenflow.mlflow_utils.mlflow")
-@patch("zenflow.mlflow_utils.OmegaConf")  # Mock less for failure path, focus on exception
-@patch("zenflow.mlflow_utils.Path")
+@patch("zendag.mlflow_utils.mlflow")
+@patch("zendag.mlflow_utils.OmegaConf")  # Mock less for failure path, focus on exception
+@patch("zendag.mlflow_utils.Path")
 def test_mlflow_run_failure(
     MockPath,
     MockOmegaConf,
@@ -166,7 +166,7 @@ def test_mlflow_run_failure(
     decorated_function = mlflow_run(sample_stage_function)
     with pytest.raises(ValueError, match="Simulated failure"):
         with patch(
-            "zenflow.mlflow_utils.hydra.core.hydra_config.HydraConfig",
+            "zendag.mlflow_utils.hydra.core.hydra_config.HydraConfig",
             mock_hydra_config_get,
         ):
             decorated_function("fail")  # This argument makes sample_stage_function raise an error

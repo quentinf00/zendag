@@ -1,7 +1,7 @@
-# `zenflow.mlflow_utils`
+# `zendag.mlflow_utils`
 
 ```{eval-rst}
-.. automodule:: zenflow.mlflow_utils
+.. automodule:: zendag.mlflow_utils
    :members:
    :undoc-members:
    :show-inheritance:

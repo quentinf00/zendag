@@ -6,14 +6,14 @@ import pandas as pd
 from omegaconf import DictConfig
 import mlflow # Direct MLflow usage within stage
 
-# Assuming zenflow is importable (from pixi environment)
-from zenflow.mlflow_utils import mlflow_run
+# Assuming zendag is importable (from pixi environment)
+from zendag.mlflow_utils import mlflow_run
 
 # Configure a logger for this module
 log = logging.getLogger(__name__)
 
 
-@mlflow_run # ZenFlow decorator handles MLflow run setup, param logging from config, etc.
+@mlflow_run # ZenDag decorator handles MLflow run setup, param logging from config, etc.
 def process_data_stage(input_file, output_file, processing_factor):
     """
     Example data processing stage.

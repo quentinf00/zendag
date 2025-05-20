@@ -2,7 +2,7 @@
 
 import pytest
 
-from zenflow.config_utils import deps_path, outs_path
+from zendag.config_utils import deps_path, outs_path
 
 
 def test_outs_path_simple():

@@ -37,7 +37,7 @@ configure = { cmd = "python configure.py", depends_on = ["clean-configs"] }
 
 # Run the full DVC pipeline (experiment tracking enabled)
 # depends_on ensures configure and start_pipeline run first if not up-to-date.
-pipeline = { cmd = "dvc exp run --set-param zenflow.pipeline_id_file=$PIPELINE_ID_FILE", depends_on = ["configure", "start_pipeline"] }
+pipeline = { cmd = "dvc exp run --set-param zendag.pipeline_id_file=$PIPELINE_ID_FILE", depends_on = ["configure", "start_pipeline"] }
 
 # Save pipeline results (Git commit & push, DVC push)
 # The confirm-gitadd task is a safety net.
@@ -125,7 +125,7 @@ cmd = "python -m xp_workflow.start_pipeline run_name=$NAME project_name=$MLFLOW_
 env = {NAME = "default1"}
 
 [tasks.stage]
-cmd = "python -m zenflow.run -cd $ARTIFACTS_DIR/$STAGE -cn $CN hydra.run.dir=$ARTIFACTS_DIR/$STAGE/$CN"
+cmd = "python -m zendag.run -cd $ARTIFACTS_DIR/$STAGE -cn $CN hydra.run.dir=$ARTIFACTS_DIR/$STAGE/$CN"
 env = { STAGE = "", CN = "" } # User must set these
 
 [system-requirements]
@@ -149,7 +149,7 @@ pytorch = "*"
 
 [pypi-dependencies]
 {{cookiecutter.project_slug}} = { path = ".", editable = true }
-zenflow = "=={{ cookiecutter.zenflow_version }}"
+zendag = "=={{ cookiecutter.zendag_version }}"
 # Add any dependencies that are only available on PyPI and not conda-forge
 # example-pypi-package = ">=1.0.0"
 

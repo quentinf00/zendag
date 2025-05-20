@@ -1,6 +1,6 @@
-# .github/workflows/zenflow-package-ci.yml
-# .github/workflows/zenflow-package-ci.yml
-name: ZenFlow Package CI & Docs
+# .github/workflows/zendag-package-ci.yml
+# .github/workflows/zendag-package-ci.yml
+name: ZenDag Package CI & Docs
 
 on:
   push:
@@ -10,15 +10,15 @@ on:
     tags:
       - 'v*' 
     paths:
-      - 'zenflow/**'
-      - '.github/workflows/zenflow-package-ci.yml'
+      - 'zendag/**'
+      - '.github/workflows/zendag-package-ci.yml'
   pull_request:
     branches:
       - main
       - develop
     paths:
-      - 'zenflow/**'
-      - '.github/workflows/zenflow-package-ci.yml'
+      - 'zendag/**'
+      - '.github/workflows/zendag-package-ci.yml'
   workflow_dispatch: # Allows manual triggering
 
 jobs:
@@ -85,7 +85,7 @@ jobs:
       - name: Store package artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: zenflow-package-${{ github.sha }}
+          name: zendag-package-${{ github.sha }}
           path: dist/*
 
   build-and-deploy-docs:
@@ -107,13 +107,13 @@ jobs:
           python-version: '3.10' # Match Python version for docs build
 
       - name: Install Hatch and documentation dependencies
-        working-directory: ./zenflow # All operations within the zenflow package directory
+        working-directory: ./zendag # All operations within the zendag package directory
         run: |
           pip install hatch
           # Create and activate the 'docs' environment defined in pyproject.toml
           hatch env create docs # This uses [tool.hatch.envs.docs] and its features
-          # Ensure the local zenflow package is installed editably in this env
-          # Hatch might do this automatically with "zenflow @ {root:uri}" in docs deps
+          # Ensure the local zendag package is installed editably in this env
+          # Hatch might do this automatically with "zendag @ {root:uri}" in docs deps
           # or you can force it:
           # hatch run docs:pip install -e .
 
@@ -135,7 +135,7 @@ jobs:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') # Trigger on version tags
     environment:
       name: pypi
-      url: https://pypi.org/p/zenflow
+      url: https://pypi.org/p/zendag
     permissions:
       id-token: write # For trusted publishing
 
@@ -143,7 +143,7 @@ jobs:
       - name: Download all workflow run artifacts
         uses: actions/download-artifact@v4
         with:
-          name: zenflow-package-${{ github.sha }}
+          name: zendag-package-${{ github.sha }}
           path: dist
 
       - name: Publish package to PyPI

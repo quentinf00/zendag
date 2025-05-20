@@ -1,10 +1,10 @@
 # Sharing Data & Models: DVC Versioning with Intake Catalogs (using fsspec)
 
-Once you've used ZenFlow and DVC to produce versioned datasets and models, how do you easily share and consume them? [Intake](https://intake.readthedocs.io/) is a lightweight Python library for finding, investigating, loading, and disseminating data. By leveraging `fsspec` and its DVC filesystem implementation (`dvcfs`), Intake provides a modern and flexible way to access DVC-versioned assets.
+Once you've used ZenDag and DVC to produce versioned datasets and models, how do you easily share and consume them? [Intake](https://intake.readthedocs.io/) is a lightweight Python library for finding, investigating, loading, and disseminating data. By leveraging `fsspec` and its DVC filesystem implementation (`dvcfs`), Intake provides a modern and flexible way to access DVC-versioned assets.
 
 ## Recap: DVC for Versioning Artifacts
 
-As covered previously, ZenFlow and DVC work together to version your data. When a stage produces an output like `artifacts/transform/default_transform/output.csv`, DVC creates a `.dvc` file tracking its metadata and content hash.
+As covered previously, ZenDag and DVC work together to version your data. When a stage produces an output like `artifacts/transform/default_transform/output.csv`, DVC creates a `.dvc` file tracking its metadata and content hash.
 
 ## Step 1: Push DVC Data to a Remote
 
@@ -58,11 +58,11 @@ sources:
       # urlpath uses the dvc:// fsspec protocol.
       # The part after dvc:// (e.g., your_username/your_project/) is often conventional
       # as target_options.url primarily defines the Git repo.
-      urlpath: "dvc://your_username_placeholder/your_zenflow_project_placeholder/artifacts/transform/default_transform/data/processed/output.csv" # !!! REPLACE owner/repo part !!!
+      urlpath: "dvc://your_username_placeholder/your_zendag_project_placeholder/artifacts/transform/default_transform/data/processed/output.csv" # !!! REPLACE owner/repo part !!!
       storage_options:
         # target_options specifies the Git repository details for dvcfs
         target_options:
-          url: "https://github.com/your_username_placeholder/your_zenflow_project_placeholder.git" # !!! REPLACE THIS !!!
+          url: "https://github.com/your_username_placeholder/your_zendag_project_placeholder.git" # !!! REPLACE THIS !!!
         # rev is the Git revision (tag, branch, or commit hash)
         rev: "v1.0.0-data"
         # remote: "mylocalremote" # Optional: DVC remote if not default/auto-discoverable
@@ -75,15 +75,15 @@ sources:
   #   driver: netcdf 
   #   description: "Weather model output v2 (NetCDF via fsspec dvc)."
   #   args:
-  #     urlpath: "dvc://your_username_placeholder/your_zenflow_project_placeholder/data/models/weather_v2.nc" # !!! REPLACE !!!
+  #     urlpath: "dvc://your_username_placeholder/your_zendag_project_placeholder/data/models/weather_v2.nc" # !!! REPLACE !!!
   #     chunks: {} # Argument for xarray.open_dataset
   #     storage_options:
   #       target_options:
-  #         url: "https://github.com/your_username_placeholder/your_zenflow_project_placeholder.git" # !!! REPLACE !!!
+  #         url: "https://github.com/your_username_placeholder/your_zendag_project_placeholder.git" # !!! REPLACE !!!
   #       rev: "weather-model-v2-tag"
 ```
 **Important:**
-*   Replace placeholders like `your_username_placeholder/your_zenflow_project_placeholder` with your actual Git repository owner and name.
+*   Replace placeholders like `your_username_placeholder/your_zendag_project_placeholder` with your actual Git repository owner and name.
 *   The `path` part of the `urlpath` must be the exact path to the data file as tracked by DVC within that repository structure.
 *   Ensure the Git `rev` (e.g., tag `v1.0.0-data`) exists in your Git repository.
 
@@ -100,10 +100,10 @@ import os
 # In a real scenario, this file would exist independently.
 # !!! REPLACE with your actual Git repo URL and path for this to work beyond this notebook !!!
 DUMMY_GIT_OWNER = "your_username_placeholder"
-DUMMY_GIT_REPO_NAME = "your_zenflow_project_placeholder"
+DUMMY_GIT_REPO_NAME = "your_zendag_project_placeholder"
 # Construct a file:// URL if your repo is local for testing, otherwise use https://
 # For this example, we'll assume a local path could be used for placeholder.
-# A real remote test would require cloning this ZenFlow repo and pushing it to your own GitHub.
+# A real remote test would require cloning this ZenDag repo and pushing it to your own GitHub.
 # For simplicity in a self-contained notebook, we'll mock the access or it will fail if placeholders aren't replaced.
 DUMMY_GIT_REPO_URL_FOR_FSSPEC = f"https_IS_A_PLACEHOLDER_REPLACE_ME_github.com/{DUMMY_GIT_OWNER}/{DUMMY_GIT_REPO_NAME}.git"
 # If testing locally against a checked-out version of the project (that has DVC setup):

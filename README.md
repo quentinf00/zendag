@@ -1,9 +1,9 @@
-3. Framework Project Documentation (zenflow/README.md)
+3. Framework Project Documentation (zendag/README.md)
 
       
-# ZenFlow
+# ZenDag
 
-**ZenFlow** is a Python framework designed to streamline Machine Learning experimentation workflows by integrating:
+**ZenDag** is a Python framework designed to streamline Machine Learning experimentation workflows by integrating:
 
 *   **Configuration Management:** [Hydra](https://hydra.cc/) and [Hydra-Zen](https://mit-ll-responsible-ai.github.io/hydra-zen/) for modular, reusable, and composable configuration-as-code.
 *   **Pipeline Orchestration & Versioning:** [DVC](https://dvc.org/) for defining experiment pipelines (DAGs) and versioning data, artifacts, and models.
@@ -15,20 +15,20 @@ The core idea is to **drive the DVC pipeline definition directly from your Hydra
 
 1.  **Configuration as Code:** Define all aspects of your experiment (data sources, preprocessing steps, model architecture, training parameters, evaluation metrics, logger settings) using Python code via Hydra-Zen and store them in a structured way (e.g., using `hydra_zen.ZenStore`).
 2.  **Stage-Based Pipelines:** Structure your ML workflow into logical stages (e.g., `data_prep`, `feature_eng`, `train`, `evaluate`, `deploy`). Each stage corresponds to a node in the DVC pipeline graph.
-3.  **Automatic DAG Generation:** ZenFlow automatically generates the `dvc.yaml` file. It discovers dependencies (`deps`) and outputs (`outs`) by inspecting your Hydra configurations during a resolution step. You declare these using `${deps:...}` and `${outs:...}` interpolations directly within your configuration values (e.g., file paths).
-4.  **Integrated Experiment Tracking:** A simple decorator (`@zenflow.mlflow_run`) wraps your stage execution functions to automatically handle MLflow setup, log parameters from the Hydra config, capture artifacts (including logs and the config itself), and manage nested runs within a parent pipeline run.
-5.  **Environment & Task Management:** While ZenFlow itself is framework-agnostic regarding environment management, it's designed to work seamlessly with tools like [Pixi](https://pixi.sh/) or Conda/Poetry. A [Cookiecutter template](#cookiecutter-template) is provided to quickly set up a project using Pixi.
+3.  **Automatic DAG Generation:** ZenDag automatically generates the `dvc.yaml` file. It discovers dependencies (`deps`) and outputs (`outs`) by inspecting your Hydra configurations during a resolution step. You declare these using `${deps:...}` and `${outs:...}` interpolations directly within your configuration values (e.g., file paths).
+4.  **Integrated Experiment Tracking:** A simple decorator (`@zendag.mlflow_run`) wraps your stage execution functions to automatically handle MLflow setup, log parameters from the Hydra config, capture artifacts (including logs and the config itself), and manage nested runs within a parent pipeline run.
+5.  **Environment & Task Management:** While ZenDag itself is framework-agnostic regarding environment management, it's designed to work seamlessly with tools like [Pixi](https://pixi.sh/) or Conda/Poetry. A [Cookiecutter template](#cookiecutter-template) is provided to quickly set up a project using Pixi.
 
 ## Installation
 
 ```bash
-pip install zenflow # Or install from source/git if needed
+pip install zendag # Or install from source/git if needed
 ```
     
 
 ## API Reference
 
-**zenflow.core.configure_pipeline(...)**
+**zendag.core.configure_pipeline(...)**
 
       
 ```python
@@ -38,7 +38,7 @@ def configure_pipeline(
     stage_dir_fn: Callable[[str, str], str] = default_stage_dir_fn,
     configs_dir_fn: Callable[[str], str] = default_configs_dir_fn,
     dvc_filename: str = "dvc.yaml",
-    run_script: str = "zenflow.run",
+    run_script: str = "zendag.run",
     config_root: Optional[str] = None,
 ) -> None:
     # ... (Full signature in docstring above) ...
@@ -71,7 +71,7 @@ def configure_pipeline(
 * Logging: Provides INFO and DEBUG level logs about the process, including discovered deps/outs. Configure Python's logging to see these.
 
 
-**zenflow.config_utils.deps_path(...) & zenflow.config_utils.outs_path(...)**
+**zendag.config_utils.deps_path(...) & zendag.config_utils.outs_path(...)**
 
 ```python   
 def deps_path(s: str, input_stage: Optional[str] = None, input_name: Optional[str] = None, stage_dir_fn=None) -> str:
@@ -90,7 +90,7 @@ def outs_path(s: str) -> str:
 * Usage: Use these inside your Hydra-Zen configurations where file paths are defined:
 
 ```python      
-    from zenflow.config_utils import deps_path, outs_path
+    from zendag.config_utils import deps_path, outs_path
     from hydra_zen import builds
 
     DataConfig = builds(
@@ -105,7 +105,7 @@ def outs_path(s: str) -> str:
         
 
 
-**@zenflow.mlflow_utils.mlflow_run(...)**
+**@zendag.mlflow_utils.mlflow_run(...)**
 
 ```python
 @mlflow_run(project_name: str = os.environ.get("MLFLOW_PROJECT_NAME", "DefaultProject"))
@@ -169,7 +169,7 @@ my_project/
 ├── .dvcignore
 ├── .gitignore
 ├── .pipeline_id           # Stores current parent MLflow run ID (auto-managed)
-├── configure.py           # Script to run zenflow.configure_pipeline
+├── configure.py           # Script to run zendag.configure_pipeline
 ├── dvc.yaml               # Generated by configure.py (defines pipeline)
 ├── pixi.toml              # Environment and task definitions (Pixi)
 └── README.md
@@ -178,7 +178,7 @@ my_project/
 
 * configs/: Organize your Hydra-Zen builds calls here, grouped by functionality (data, model, trainer, logger, etc.). Use hydra_zen.make_custom_builds_fn for brevity. Import these into configure.py.
 
-* src/my_project_pkg/stages/: Implement the core logic for each pipeline stage here. Decorate the main function for each stage with @zenflow.mlflow_run. These functions typically accept the Hydra DictConfig as an argument.
+* src/my_project_pkg/stages/: Implement the core logic for each pipeline stage here. Decorate the main function for each stage with @zendag.mlflow_run. These functions typically accept the Hydra DictConfig as an argument.
 
 * configure.py: The script that:
 
@@ -188,9 +188,9 @@ my_project/
 
     * Defines the list of stage_groups to process.
 
-    * Calls zenflow.core.configure_pipeline(store, stage_groups, ...).
+    * Calls zendag.core.configure_pipeline(store, stage_groups, ...).
 
-* pixi.toml: Defines the environment (dependencies like python, dvc, mlflow, hydra-core, hydra-zen, zenflow, your src package) and tasks (configure, pipeline, save, etc.).
+* pixi.toml: Defines the environment (dependencies like python, dvc, mlflow, hydra-core, hydra-zen, zendag, your src package) and tasks (configure, pipeline, save, etc.).
 
 ## How Automatic DAG Generation Works Internally
 
@@ -219,7 +219,7 @@ The key is the interaction between configure_pipeline, OmegaConf.resolve, and th
 This avoids manual duplication of paths between the config where they are used and the DVC pipeline definition.
 
 
-## 4. [Cookiecutter Template Documentation (`README.md` for template users)](./cookiecutter-zenflow-template/README.md)
+## 4. [Cookiecutter Template Documentation (`README.md` for template users)](./cookiecutter-zendag-template/README.md)
 
 ## License
 Apache 2.0

@@ -7,14 +7,14 @@ on:
       - main
       - develop
     paths: # Trigger if template files change
-      - 'cookiecutter-zenflow-template/**'
+      - 'cookiecutter-zendag-template/**'
       - '.github/workflows/cookiecutter-template-test.yml'
   pull_request:
     branches:
       - main
       - develop
     paths:
-      - 'cookiecutter-zenflow-template/**'
+      - 'cookiecutter-zendag-template/**'
       - '.github/workflows/cookiecutter-template-test.yml'
 
 jobs:
@@ -53,9 +53,9 @@ jobs:
           # Here we use no_input to accept defaults.
           # If your defaults create the example stage, this is fine.
           # Otherwise, you might need to pass specific options.
-          cookiecutter --no-input ./cookiecutter-zenflow-template project_slug="test_generated_project"
+          cookiecutter --no-input ./cookiecutter-zendag-template project_slug="test_generated_project"
           # If you need to pass options:
-          # cookiecutter --no-input ./cookiecutter-zenflow-template project_slug="test_generated_project_with_example" create_example_stage="yes"
+          # cookiecutter --no-input ./cookiecutter-zendag-template project_slug="test_generated_project_with_example" create_example_stage="yes"
           echo "Generated project in directory: test_generated_project"
           echo "project_path=test_generated_project" >> $GITHUB_OUTPUT
 

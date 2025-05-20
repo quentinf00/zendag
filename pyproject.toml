@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "zenflow"
+name = "zendag"
 version = "0.1.0" # Or your desired starting version
 description = "A framework for integrating Hydra/DVC/MLflow for reproducible ML experiments."
 readme = "README.md" # Assuming your detailed docs are in README.md
@@ -32,11 +32,11 @@ dependencies = [
     "mlflow>=2.0.0,<4.0", # Check latest stable MLflow
     "pandas>=1.3.0,<3.0", # For parameter normalization in mlflow_utils
     "toolz>=0.11.0,<1.0", # If still used by configure_pipeline (was in original)
-    # DVC is a CLI tool used *with* zenflow, not usually a direct library dependency
-    # unless you plan to call DVC Python API directly from zenflow, which is uncommon.
+    # DVC is a CLI tool used *with* zendag, not usually a direct library dependency
+    # unless you plan to call DVC Python API directly from zendag, which is uncommon.
     # Users will install DVC separately via pip or their package manager.
 ]
-# zenflow/pyproject.toml
+# zendag/pyproject.toml
 [tool.hatch.envs.docs]
 features = ['docs']
 
@@ -46,10 +46,10 @@ docs-clean = "rm -rf docs/_build"
 
 [tool.hatch.envs.default.scripts]
 test = "pytest {args:tests}"
-test-cov = "pytest --cov=zenflow --cov-report=xml --cov-report=term-missing {args:tests}"
+test-cov = "pytest --cov=zendag --cov-report=xml --cov-report=term-missing {args:tests}"
 lint-all = [
-  "ruff format --check zenflow tests",
-#   "ruff check zenflow tests",
+  "ruff format --check zendag tests",
+#   "ruff check zendag tests",
 ]
 
 [tool.hatch.metadata]
@@ -57,15 +57,15 @@ allow-direct-references = true
 
 
 [project.urls]
-Homepage = "https://github.com/quentinf00/zenflow" # Replace with actual URL
-Repository = "https://github.com/quentinf00/zenflow"
-Issues = "https://github.com/quentinf00/zenflow/issues"
-# Documentation = "https://quentinf00.github.io/zenflow" # If you set up GitHub Pages
+Homepage = "https://github.com/quentinf00/zendag" # Replace with actual URL
+Repository = "https://github.com/quentinf00/zendag"
+Issues = "https://github.com/quentinf00/zendag/issues"
+Documentation = "https://quentinf00.github.io/zendag" # If you set up GitHub Pages
 
-# Optional: Define entry points if ZenFlow has CLI commands itself
-# (configure_pipeline is usually run as a script, not a CLI tool of zenflow itself)
+# Optional: Define entry points if ZenDag has CLI commands itself
+# (configure_pipeline is usually run as a script, not a CLI tool of zendag itself)
 # [project.scripts]
-# zenflow-configure = "zenflow.cli:configure_main" # Example if you add a CLI
+# zendag-configure = "zendag.cli:configure_main" # Example if you add a CLI
 
 [project.optional-dependencies]
 dev = [
@@ -83,18 +83,18 @@ docs = [
     "sphinx-autodoc-typehints>=1.20,<2.0",
     "jupyter_client",             # MyST-NB dependency for executing notebooks
     "ipykernel",                  # For Python execution kernel in notebooks
-    # Add ZenFlow itself as a dependency for the docs build if notebooks import it
+    # Add ZenDag itself as a dependency for the docs build if notebooks import it
     # Add any dependencies your example notebooks might use:
     # DVC is a CLI tool, typically not a direct library dep for docs unless notebooks use its Python API
 ]
 
 [tool.hatch.version]
-path = "zenflow/__init__.py" # Assuming you'll put __version__ = "0.1.0" there
+path = "zendag/__init__.py" # Assuming you'll put __version__ = "0.1.0" there
 
 [tool.hatch.build.targets.sdist]
 # Include necessary files in the source distribution
 include = [
-    "/zenflow",
+    "/zendag",
     "/README.md",
     "/LICENSE",
     # "/docs", # If you want to include raw docs source
@@ -103,7 +103,7 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 # Include necessary files in the wheel
-packages = ["zenflow"]
+packages = ["zendag"]
 
 
 [tool.ruff]
@@ -122,7 +122,7 @@ ignore = [
 
 
 [tool.ruff.lint.isort]
-known-first-party = ["zenflow"]
+known-first-party = ["zendag"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -141,7 +141,7 @@ ignore_missing_imports = true # Start with true, then gradually fix and remove
 # If you use pytest
 [tool.pytest.ini_options]
 minversion = "7.0"
-addopts = "-ra -q --cov=zenflow --cov-report=term-missing"
+addopts = "-ra -q --cov=zendag --cov-report=term-missing"
 testpaths = [
     "tests",
 ]

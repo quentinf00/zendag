@@ -1,28 +1,28 @@
-# ZenFlow Quickstart: Your First Pipeline
+# ZenDag Quickstart: Your First Pipeline
 
-Welcome to ZenFlow! This guide will walk you through creating a simple, single-stage ML pipeline. We'll cover:
+Welcome to ZenDag! This guide will walk you through creating a simple, single-stage ML pipeline. We'll cover:
 
 1.  Writing a Python function for a pipeline stage.
 2.  Defining its configuration using Hydra-Zen.
-3.  Using ZenFlow to generate a DVC pipeline.
+3.  Using ZenDag to generate a DVC pipeline.
 4.  Running the pipeline with DVC.
 5.  Seeing basic data versioning and MLflow logging in action.
 
-ZenFlow aims to simplify MLOps by integrating [Hydra](httpsa://hydra.cc/) for configuration, [DVC](https://dvc.org/) for data/pipeline versioning, and [MLflow](https://mlflow.org/) for experiment tracking.
+ZenDag aims to simplify MLOps by integrating [Hydra](httpsa://hydra.cc/) for configuration, [DVC](https://dvc.org/) for data/pipeline versioning, and [MLflow](https://mlflow.org/) for experiment tracking.
 
 ## Prerequisites
 
 Before you start, make sure you have:
-*   A Python environment with `zenflow`, `pandas`, `hydra-core`, `hydra-zen`, `dvc`, and `mlflow` installed. If you used the ZenFlow Cookiecutter template, `pixi install` should set this up.
+*   A Python environment with `zendag`, `pandas`, `hydra-core`, `hydra-zen`, `dvc`, and `mlflow` installed. If you used the ZenDag Cookiecutter template, `pixi install` should set this up.
 *   An MLflow tracking server running (or be prepared for MLflow to use local file storage). `mlflow ui` in a separate terminal can start a local server.
 
 ## Step 1: Write Your Python Stage Function
 
-With ZenFlow, you write Python functions as you normally would. The main constraint is:
+With ZenDag, you write Python functions as you normally would. The main constraint is:
 
 > **All file paths your function reads from or writes to must be arguments to that function.**
 
-Let's create a simple function that reads a CSV, scales a column, and writes a new CSV. We'll also use the `@mlflow_run` decorator from ZenFlow to automatically handle MLflow setup.
+Let's create a simple function that reads a CSV, scales a column, and writes a new CSV. We'll also use the `@mlflow_run` decorator from ZenDag to automatically handle MLflow setup.
 
 Create a file `src/my_project/stages/simple_transform.py` (assuming your project is `my_project`):
 
@@ -33,12 +33,12 @@ from pathlib import Path
 import logging
 import mlflow # We can use mlflow directly for custom logging
 
-# Make sure zenflow is importable
-from zenflow.mlflow_utils import mlflow_run
+# Make sure zendag is importable
+from zendag.mlflow_utils import mlflow_run
 
 log = logging.getLogger(__name__)
 
-@mlflow_run # ZenFlow decorator for MLflow integration
+@mlflow_run # ZenDag decorator for MLflow integration
 def transform_data(input_csv_path: str, output_csv_path: str, scale_factor: float = 2.0):
     """
     Reads data from input_csv_path, multiplies 'value' column by scale_factor,
@@ -67,16 +67,16 @@ def transform_data(input_csv_path: str, output_csv_path: str, scale_factor: floa
 
 ## Step 2: Define Function Call as Configuration (Hydra-Zen)
 
-Next, we'll use [Hydra-Zen](https://mit-ll-responsible-ai.github.io/hydra-zen/) to define the *call* to our `transform_data` function as a configuration. This is where we link the function arguments (our file paths) to DVC's dependency and output tracking using ZenFlow utilities.
+Next, we'll use [Hydra-Zen](https://mit-ll-responsible-ai.github.io/hydra-zen/) to define the *call* to our `transform_data` function as a configuration. This is where we link the function arguments (our file paths) to DVC's dependency and output tracking using ZenDag utilities.
 
-> **Crucial:** Path arguments in your Hydra-Zen config must use `zenflow.config_utils.deps_path("path/to/input")` for inputs and `zenflow.config_utils.outs_path("path/to/output")` for outputs.
+> **Crucial:** Path arguments in your Hydra-Zen config must use `zendag.config_utils.deps_path("path/to/input")` for inputs and `zendag.config_utils.outs_path("path/to/output")` for outputs.
 
 Create `configs/transform_config.py`:
 
 ```python
 # configs/transform_config.py
 from hydra_zen import builds, store
-from zenflow.config_utils import deps_path, outs_path
+from zendag.config_utils import deps_path, outs_path
 
 from my_project.stages.simple_transform import transform_data
 
@@ -102,8 +102,8 @@ store(TransformConfig, group="transform", name="default_transform")
 
 Now, we create a `configure.py` script in our project root. This script will:
 1.  Import our defined configurations (which registers them with Hydra-Zen's global store).
-2.  Tell ZenFlow which stage groups and config instances to include in our DVC pipeline.
-3.  Call `zenflow.core.configure_pipeline` to generate `dvc.yaml`.
+2.  Tell ZenDag which stage groups and config instances to include in our DVC pipeline.
+3.  Call `zendag.core.configure_pipeline` to generate `dvc.yaml`.
 
 Here's a minimal `configure.py`:
 
@@ -115,7 +115,7 @@ import logging
 from pathlib import Path
 import pandas as pd # For creating dummy data
 
-from zenflow.core import configure_pipeline
+from zendag.core import configure_pipeline
 
 import configs.transform_config
 
@@ -125,8 +125,8 @@ store = hydra_zen.store
 STAGE_GROUPS = ["transform"] # Corresponds to the group name in store()
 
 if __name__ == "__main__":
-    # Configure the ZenFlow pipeline
-    log.info(f"Configuring ZenFlow pipeline to generate {DVC_FILENAME}...")
+    # Configure the ZenDag pipeline
+    log.info(f"Configuring ZenDag pipeline to generate {DVC_FILENAME}...")
     configure_pipeline(
         store=store,
         stage_groups=STAGE_GROUPS,
@@ -211,11 +211,11 @@ DVC tracks your data. Let's see this:
 
 ## Conclusion
 
-You've successfully created and run your first ZenFlow pipeline!
+You've successfully created and run your first ZenDag pipeline!
 *   You wrote a standard Python function.
-*   Used Hydra-Zen and ZenFlow utilities (`deps_path`, `outs_path`) to define its configuration and link it to DVC.
-*   ZenFlow's `configure_pipeline` automatically generated the `dvc.yaml`.
+*   Used Hydra-Zen and ZenDag utilities (`deps_path`, `outs_path`) to define its configuration and link it to DVC.
+*   ZenDag's `configure_pipeline` automatically generated the `dvc.yaml`.
 *   DVC executed the stage, and `@mlflow_run` handled MLflow logging.
 *   DVC tracked changes to your input data, enabling reproducible runs.
 
-In the next notebook, we'll explore how ZenFlow helps build more complex, multi-stage pipelines (DAGs) automatically.
+In the next notebook, we'll explore how ZenDag helps build more complex, multi-stage pipelines (DAGs) automatically.

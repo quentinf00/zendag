@@ -1,8 +1,8 @@
-# ZenFlow Documentation
+# ZenDag Documentation
 
-Welcome to the official documentation for ZenFlow!
+Welcome to the official documentation for ZenDag!
 
-ZenFlow is a Python framework designed to streamline Machine Learning experimentation workflows by integrating Hydra, DVC, and MLflow.
+ZenDag is a Python framework designed to streamline Machine Learning experimentation workflows by integrating Hydra, DVC, and MLflow.
 
 ```{toctree}
 :maxdepth: 2
@@ -18,9 +18,9 @@ sharing_with_intake
 :maxdepth: 2
 :caption: API Reference:
 
-zenflow.core
-zenflow.mlflow_utils
-zenflow.config_utils
+zendag.core
+zendag.mlflow_utils
+zendag.config_utils
 ```
 
 <!-- ```{toctree}

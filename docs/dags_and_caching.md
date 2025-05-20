@@ -1,6 +1,6 @@
-# Automatic DAGs & DVC Caching with ZenFlow
+# Automatic DAGs & DVC Caching with ZenDag
 
-In the [Quickstart Notebook](quickstart.md), we saw how to create a single-stage pipeline. ZenFlow truly shines when building multi-stage pipelines, as its `deps_path` and `outs_path` utilities automatically define the Directed Acyclic Graph (DAG) for DVC. We'll also see DVC's powerful caching mechanism in action.
+In the [Quickstart Notebook](quickstart.md), we saw how to create a single-stage pipeline. ZenDag truly shines when building multi-stage pipelines, as its `deps_path` and `outs_path` utilities automatically define the Directed Acyclic Graph (DAG) for DVC. We'll also see DVC's powerful caching mechanism in action.
 
 ## Building a Multi-Stage Pipeline
 
@@ -17,7 +17,7 @@ import pandas as pd
 from pathlib import Path
 import logging
 import mlflow
-from zenflow.mlflow_utils import mlflow_run
+from zendag.mlflow_utils import mlflow_run
 
 log = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ Config (`configs/generate_data_config.py`):
 ```python
 # configs/generate_data_config.py
 from hydra_zen import builds, store
-from zenflow.config_utils import outs_path
+from zendag.config_utils import outs_path
 from my_project.stages.generate_data_stage import generate_data
 
 GenerateDataConfig = builds(
@@ -61,7 +61,7 @@ import pandas as pd
 from pathlib import Path
 import logging
 import mlflow
-from zenflow.mlflow_utils import mlflow_run
+from zendag.mlflow_utils import mlflow_run
 
 log = logging.getLogger(__name__)
 
@@ -87,7 +87,7 @@ Config (`configs/process_data_config.py`):
 ```python
 # configs/process_data_config.py
 from hydra_zen import builds, store
-from zenflow.config_utils import deps_path, outs_path
+from zendag.config_utils import deps_path, outs_path
 from my_project.stages.process_data_stage import process_data
 
 ProcessDataConfig = builds(
@@ -101,7 +101,7 @@ ProcessDataConfig = builds(
 store(ProcessDataConfig, group="process_data", name="default_proc")
 ```
 **Note the `deps_path`:**
-*   `deps_path("generated_data.csv", gererate_data", "default_gen")` tells ZenFlow/DVC that this input comes from the `output_csv_path` (which was `generated_data.csv`) of the stage instance named `default_gen` in the `generate_data` group.
+*   `deps_path("generated_data.csv", gererate_data", "default_gen")` tells ZenDag/DVC that this input comes from the `output_csv_path` (which was `generated_data.csv`) of the stage instance named `default_gen` in the `generate_data` group.
 *   The `stage_dir` interpolation provides the base output directory of the dependency stage.
 
 ### Stage 3: Summarize Data
@@ -112,7 +112,7 @@ import pandas as pd
 from pathlib import Path
 import logging
 import mlflow
-from zenflow.mlflow_utils import mlflow_run
+from zendag.mlflow_utils import mlflow_run
 
 log = logging.getLogger(__name__)
 
@@ -140,7 +140,7 @@ Config (`configs/summarize_data_config.py`):
 ```python
 # configs/summarize_data_config.py
 from hydra_zen import builds, store
-from zenflow.config_utils import deps_path, outs_path
+from zendag.config_utils import deps_path, outs_path
 from my_project.stages.summarize_data_stage import summarize_data
 
 SummarizeDataConfig = builds(
@@ -162,7 +162,7 @@ import hydra_zen
 import os
 import logging
 from pathlib import Path
-from zenflow.core import configure_pipeline
+from zendag.core import configure_pipeline
 
 # Import your config modules
 import configs.generate_data_config
@@ -178,8 +178,8 @@ STAGE_GROUPS = [
 ]
 
 if __name__ == "__main__":
-    # Configure the ZenFlow pipeline
-    logging.info(f"Configuring ZenFlow pipeline to generate {DVC_FILENAME}...")
+    # Configure the ZenDag pipeline
+    logging.info(f"Configuring ZenDag pipeline to generate {DVC_FILENAME}...")
     configure_pipeline(
         store=store, stage_groups=STAGE_GROUPS,
     )
@@ -190,7 +190,7 @@ if __name__ == "__main__":
 ## Running `configure` and Inspecting the DAG
 
 1.  Run `python configure.py` (or `pixi run configure`).
-2.  Open `dvc.yaml`. You'll see all three stages. Notice how the `deps` of `process_data/default_proc` correctly points to the output path of `generate_data/default_gen`, and similarly for `summarize_data`. ZenFlow resolved these paths.
+2.  Open `dvc.yaml`. You'll see all three stages. Notice how the `deps` of `process_data/default_proc` correctly points to the output path of `generate_data/default_gen`, and similarly for `summarize_data`. ZenDag resolved these paths.
 3.  Visualize the DAG:
 
     ```bash
@@ -228,4 +228,4 @@ if __name__ == "__main__":
 
 ## Conclusion
 
-ZenFlow's use of `deps_path` and `outs_path` allows DVC to automatically understand the relationships between your pipeline stages, forming a DAG. DVC's caching mechanism then ensures that only necessary parts of your pipeline are re-executed when inputs or parameters change, saving significant time and computational resources. The `${stage_dir:...}` interpolation is key for linking outputs of one stage to inputs of another in a clean way.
+ZenDag's use of `deps_path` and `outs_path` allows DVC to automatically understand the relationships between your pipeline stages, forming a DAG. DVC's caching mechanism then ensures that only necessary parts of your pipeline are re-executed when inputs or parameters change, saving significant time and computational resources. The `${stage_dir:...}` interpolation is key for linking outputs of one stage to inputs of another in a clean way.

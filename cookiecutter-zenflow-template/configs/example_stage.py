@@ -6,8 +6,8 @@ from hydra_zen import builds, store
 # which pixi.toml should handle via `{{cookiecutter.project_slug}} = { path = "./src/{{cookiecutter.project_slug}}", editable = true }`
 from {{cookiecutter.project_slug}}.stages.example_stage import process_data_stage
 
-# Import ZenFlow utils for declaring deps/outs
-from zenflow.config_utils import deps_path, outs_path
+# Import ZenDag utils for declaring deps/outs
+from zendag.config_utils import deps_path, outs_path
 
 
 

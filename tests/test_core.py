@@ -8,7 +8,7 @@ import pytest
 import yaml  # For parsing dvc.yaml
 from omegaconf import OmegaConf
 
-from zenflow.core import (
+from zendag.core import (
     configure_pipeline,
 )
 

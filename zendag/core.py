@@ -30,7 +30,7 @@ def configure_pipeline(
     stage_dir_fn: Callable[[str, str], str] = default_stage_dir_fn,
     configs_dir_fn: Callable[[str], str] = default_configs_dir_fn,
     dvc_filename: str = "dvc.yaml",
-    run_script: str = "zenflow.run",  # Changed from xp_workflow.run
+    run_script: str = "zendag.run",  # Changed from xp_workflow.run
     config_root: Optional[str] = None,  # Optional root for hydra initialization
 ) -> None:
     """
@@ -55,7 +55,7 @@ def configure_pipeline(
                         stored. Defaults to `artifacts/<stage_name>`.
         dvc_filename: The name of the DVC pipeline file to generate. Defaults to 'dvc.yaml'.
         run_script: The Python module path to execute for running a stage (e.g., 'my_project.run').
-                    Defaults to 'zenflow.run'.
+                    Defaults to 'zendag.run'.
         config_root: The path relative to which Hydra should initialize (defaults to cwd).
                      Needed if configs are stored outside the cwd.
     """

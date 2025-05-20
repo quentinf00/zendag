@@ -2,7 +2,7 @@
 authors = ["Quentin Febvre <quentin.febvre@imt-atlantique.fr>"]
 channels = ["conda-forge"]
 description = "Add a short description here"
-name = "zenflow"
+name = "zendag"
 platforms = ["linux-64"]
 version = "0.1.0"
 
@@ -12,7 +12,7 @@ version = "0.1.0"
 python = "3.11.*"
 
 [feature.dev.pypi-dependencies]
-zenflow = {path= ".", extras=["dev"], editable=true}
+zendag = {path= ".", extras=["dev"], editable=true}
 
 [environments]
 dev = ['dev']

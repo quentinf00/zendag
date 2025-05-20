@@ -1795,9 +1795,9 @@ packages:
   sha256: 1a7ed2d9d039bd41e889f6fb9364554052ca21ce823580f6a07c4ec245c1f5d6
   requires_python: '>=3.8'
 - pypi: .
-  name: zenflow
+  name: zendag
   version: 0.1.0
-  sha256: ee86e58fa26d482f3f4dbc06cd4cb45786e3f0b23d885e91f8e9380712812b8b
+  sha256: 64375aaab30a4c14c268604de67a1508442d3c35ab8b358c747eb41c79fe9a20
   requires_dist:
   - hydra-zen>=0.14.0,<1.0
   - mlflow>=2.0.0,<4.0

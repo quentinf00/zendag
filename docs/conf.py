@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 
-# zenflow/docs/conf.py
+# zendag/docs/conf.py
 
 import os
 import sys
@@ -18,13 +18,13 @@ from datetime import datetime
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-# This makes sure Sphinx can find your 'zenflow' package for autodoc.
+# This makes sure Sphinx can find your 'zendag' package for autodoc.
 sys.path.insert(0, os.path.abspath('../..'))  # Points to the root of the Git repo
-sys.path.insert(0, os.path.abspath('..')) # Points to the 'zenflow' package directory itself
+sys.path.insert(0, os.path.abspath('..')) # Points to the 'zendag' package directory itself
 
 # -- Project information -----------------------------------------------------
 
-project = 'ZenFlow'
+project = 'ZenDag'
 copyright = '2025, Quentin Febvre'
 author = 'Quentin Febvre'
 release = '0.1.0'
@@ -33,7 +33,7 @@ copyright = f'{datetime.now().year}, {author}'
 # The full version, including alpha/beta/rc tags
 # Attempt to get version from the package itself
 try:
-    from zenflow import __version__ as release
+    from zendag import __version__ as release
 except ImportError:
     release = '0.1.0' # Fallback version
 

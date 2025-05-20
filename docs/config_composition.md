@@ -1,6 +1,6 @@
-# Config Composition & Reusable Components with ZenFlow
+# Config Composition & Reusable Components with ZenDag
 
-Hydra is powerful for configuration management, especially its ability to compose configurations from smaller, reusable pieces. ZenFlow leverages this: you can define common components (like loggers, trainers, data modules) as separate configurations and then include them in your main stage configs. ZenFlow will still discover any `deps_path` or `outs_path` declarations within these composed parts.
+Hydra is powerful for configuration management, especially its ability to compose configurations from smaller, reusable pieces. ZenDag leverages this: you can define common components (like loggers, trainers, data modules) as separate configurations and then include them in your main stage configs. ZenDag will still discover any `deps_path` or `outs_path` declarations within these composed parts.
 
 ## Example: A Reusable File Logger
 
@@ -12,12 +12,12 @@ Create `configs/loggers_config.py`:
 ```python
 # configs/loggers_config.py
 from hydra_zen import builds, store
-from zenflow.config_utils import outs_path # Logger's output file is a DVC output
+from zendag.config_utils import outs_path # Logger's output file is a DVC output
 from pathlib import Path
 import logging # Standard logging
 
 # This is a simplified function. In reality, it would configure the logging system.
-# For ZenFlow's dvc.yaml generation, we primarily care that it defines an output path.
+# For ZenDag's dvc.yaml generation, we primarily care that it defines an output path.
 # The actual logging setup happens when the stage runs and Hydra instantiates this.
 def setup_stage_file_logger(log_file_path_str: str, log_level: str = "INFO"):
     """
@@ -32,7 +32,7 @@ def setup_stage_file_logger(log_file_path_str: str, log_level: str = "INFO"):
     print(f"[LoggerSetup] Configuring file logger at: {log_file_path} with level {log_level}")
     
     # In a real scenario, you might return a configured logger object or just perform side effects.
-    # For ZenFlow's config resolution, the important part is that `log_file_path_str` uses `outs_path`.
+    # For ZenDag's config resolution, the important part is that `log_file_path_str` uses `outs_path`.
     return {"log_file": str(log_file_path), "level": log_level}
 
 # Hydra-Zen config for our file logger
@@ -66,7 +66,7 @@ Modify `configs/transform_config.py`:
 ```python
 # configs/transform_config.py (modified)
 from hydra_zen import builds, store, MISSING # Import MISSING
-from zenflow.config_utils import deps_path, outs_path
+from zendag.config_utils import deps_path, outs_path
 # Assume transform_data is in my_project.stages.simple_transform
 from my_project.stages.simple_transform import transform_data # Or your actual import
 
@@ -103,7 +103,7 @@ store(TransformConfigWithLogger, group="transform", name="logged_transform")
 ```
 For simplicity, we'll focus on the case where the logger is instantiated by Hydra, and the stage function `transform_data` doesn't need a `logger` argument directly. The `setup_stage_file_logger` function would typically configure a global/module logger that `transform_data` then uses via `logging.getLogger(__name__)`.
 
-### How ZenFlow Discovers the Logger's Output
+### How ZenDag Discovers the Logger's Output
 
 1.  **Update `configure.py`**:
     *   Import `configs.loggers_config`.
@@ -143,7 +143,7 @@ For simplicity, we'll focus on the case where the logger is instantiated by Hydr
         params:
         - artifacts/transform/logged_transform.yaml
     ```
-    ZenFlow's `configure_pipeline` calls `OmegaConf.resolve(cfg)` on the *fully composed* configuration for `transform/logged_transform`. This composed config includes the `logger` node (because of `hydra_defaults`), which itself contains `log_file_path_str=outs_path("logs/stage_execution.log")`. The `outs:` resolver is triggered, and the log file path is added to the `outs` for the `transform/logged_transform` DVC stage.
+    ZenDag's `configure_pipeline` calls `OmegaConf.resolve(cfg)` on the *fully composed* configuration for `transform/logged_transform`. This composed config includes the `logger` node (because of `hydra_defaults`), which itself contains `log_file_path_str=outs_path("logs/stage_execution.log")`. The `outs:` resolver is triggered, and the log file path is added to the `outs` for the `transform/logged_transform` DVC stage.
 
 ### Running the Stage
 
@@ -156,9 +156,9 @@ When you run `dvc exp run transform/logged_transform` (or `dvc exp run` if it's 
 ### Benefits
 *   **Reusability:** Define logger (or trainer, optimizer, etc.) configs once, use them in many stages.
 *   **Separation of Concerns:** Stage logic doesn't need to be cluttered with detailed setup for common components.
-*   **Dynamic Outputs:** ZenFlow automatically picks up DVC outputs (`outs_path`) declared deep within composed configuration structures.
+*   **Dynamic Outputs:** ZenDag automatically picks up DVC outputs (`outs_path`) declared deep within composed configuration structures.
 *   **Flexibility:** Easily swap out components by changing the `hydra_defaults` (e.g., switch to `verbose_file_logger`).
 
 ## Conclusion
 
-Hydra's composition, combined with ZenFlow's `deps_path` and `outs_path` discovery, allows for building sophisticated and modular MLOps pipelines where even common components can have their outputs tracked by DVC without manual duplication in the `dvc.yaml`. This leads to cleaner, more maintainable, and highly reproducible workflows.
+Hydra's composition, combined with ZenDag's `deps_path` and `outs_path` discovery, allows for building sophisticated and modular MLOps pipelines where even common components can have their outputs tracked by DVC without manual duplication in the `dvc.yaml`. This leads to cleaner, more maintainable, and highly reproducible workflows.

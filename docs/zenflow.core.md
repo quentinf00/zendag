@@ -1,7 +1,7 @@
-# `zenflow.core`
+# `zendag.core`
 
 ```{eval-rst}
-.. automodule:: zenflow.core
+.. automodule:: zendag.core
    :members:
    :undoc-members:
    :show-inheritance:

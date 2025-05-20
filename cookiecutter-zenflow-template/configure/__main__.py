@@ -8,14 +8,14 @@ from configs import process_data_config # Assuming __init__.py in configs import
 # Or be explicit:
 # import configs.process_data_config
 
-from zenflow.core import configure_pipeline
+from zendag.core import configure_pipeline
 
 
 
 # Access the global default store where configs from `process_data_config.py` were registered
 store = hydra_zen.store
 
-# Define all stage groups to be processed by ZenFlow
+# Define all stage groups to be processed by ZenDag
 # The order can matter if there are implicit dependencies not captured by DVC
 # (though DVC should handle explicit file dependencies correctly regardless of order here)
 STAGE_GROUPS = [
@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
 
     log = logging.getLogger(__name__) # Local logger for configure.py
-    log.info(f"Starting ZenFlow pipeline configuration using ARTIFACTS_DIR='artifacts'...")
+    log.info(f"Starting ZenDag pipeline configuration using ARTIFACTS_DIR='artifacts'...")
 
     configure_pipeline(
         store=store,

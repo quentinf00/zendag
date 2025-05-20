@@ -39,7 +39,7 @@ def mlflow_run(
         current_mlflow_project_name = project_name
         if not current_mlflow_project_name:
             _log.warning("MLFLOW_PROJECT_NAME not set. Using 'DefaultProject'.")
-            current_mlflow_project_name = "DefaultZenFlowProject"
+            current_mlflow_project_name = "DefaultZenDagProject"
 
         mlflow.set_experiment(current_mlflow_project_name)
         _log.info(f"Using MLflow experiment: '{current_mlflow_project_name}'")
