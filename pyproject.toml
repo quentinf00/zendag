@@ -4,7 +4,6 @@ build-backend = "hatchling.build"
 
 [project]
 name = "zendag"
-version = "0.1.0" # Or your desired starting version
 description = "A framework for integrating Hydra/DVC/MLflow for reproducible ML experiments."
 readme = "README.md" # Assuming your detailed docs are in README.md
 requires-python = ">=3.9" # Or your minimum supported Python version

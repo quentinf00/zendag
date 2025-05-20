@@ -27,7 +27,6 @@ sys.path.insert(0, os.path.abspath('..')) # Points to the 'zendag' package direc
 project = 'ZenDag'
 copyright = '2025, Quentin Febvre'
 author = 'Quentin Febvre'
-release = '0.1.0'
 copyright = f'{datetime.now().year}, {author}'
 
 # The full version, including alpha/beta/rc tags
@@ -35,7 +34,7 @@ copyright = f'{datetime.now().year}, {author}'
 try:
     from zendag import __version__ as release
 except ImportError:
-    release = '0.1.0' # Fallback version
+    release = '0.1.1' # Fallback version
 
 version = '.'.join(release.split('.')[:2]) # The short X.Y version
 
