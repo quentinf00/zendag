@@ -1,6 +1,6 @@
 import logging
 from typing import Optional
-
+from .core import default_stage_dir_fn
 _log = logging.getLogger(__name__)
 
 
@@ -15,7 +15,7 @@ def deps_path(
     s: str,
     input_stage: Optional[str] = None,
     input_name: Optional[str] = None,
-    stage_dir_fn=None,
+    stage_dir_fn=default_stage_dir_fn,
 ) -> str:
     """
     Returns the formatted string for DVC dependencies.
