@@ -65,6 +65,9 @@ def configure_pipeline(
 
     _log.info("Initializing Hydra (version_base=1.3) for configuration composition.")
     # Initialize Hydra once if needed, respecting config_root
+
+    if hydra.core.global_hydra.GlobalHydra.instance().is_initialized():
+        hydra.core.global_hydra.GlobalHydra.instance().clear()
     if config_root:
         hydra.initialize(version_base="1.3", config_path=config_root)
     else:
