@@ -74,7 +74,7 @@ def configure_pipeline(
         hydra.initialize(version_base="1.3")
 
     try:
-        store.add_to_hydra_store()
+        store.add_to_hydra_store(overwrite_ok=True)
         _log.debug("  Successfully added store configurations to hydra")
     except Exception as e:
         _log.error(
