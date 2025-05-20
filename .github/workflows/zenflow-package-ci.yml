@@ -7,6 +7,8 @@ on:
     branches:
       - main
       - develop
+    tags:
+      - 'v*'
     paths:
       - 'zenflow/**'
       - '.github/workflows/zenflow-package-ci.yml'
