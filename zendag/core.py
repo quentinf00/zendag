@@ -103,7 +103,10 @@ def configure_pipeline(
 
             # 1. Compose the configuration
             try:
-                cfg = hydra.compose(overrides=[f"+{stage}={name}"])
+                if stage is None:
+                    cfg = hydra.compose(name)
+                else:
+                    cfg = hydra.compose(overrides=[f"+{stage}={name}"])²
                 _log.debug(f"  Successfully composed configuration for '{stage}/{name}'.")
             except Exception as e:
                 _log.error(
@@ -190,7 +193,7 @@ def configure_pipeline(
     try:
         # Use OmegaConf to dump YAML for consistency and potentially better handling
         dvc_data = {"stages": dvc_stages}
-        if manual_dvc:
+        if manual_dvc is not None:
             OmegaConf.merge(dvc_data, manual_dvc)
 
         # Convert DictConfig back to primitive types suitable for pyyaml dump if needed
