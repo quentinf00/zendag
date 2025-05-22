@@ -7,10 +7,10 @@ _log = logging.getLogger(__name__)
 
 # Keep these simple functions that just format strings
 # The "magic" happens via the resolver registration in configure_pipeline
-def outs_path(s: str, root_dir: bool = False, dvc_field="out") -> str:
+def outs_path(s: str, root_dir: bool = False) -> str:
     """Returns the formatted string for DVC outputs."""
     base_dir = "." if root_dir else "${hydra:runtime.output_dir}"
-    return "${outs:" + base_dir + "/" + str(s) + "," + dvc_field + "}"
+    return "${outs:" + base_dir + "/" + str(s) + "}"
 
 
 def deps_path(
@@ -33,4 +33,4 @@ def deps_path(
         base_dir = stage_dir_fn(input_stage, input_name) + "/"
     else:
         base_dir = ""
-    return "${deps:" + base_dir + s + "}"
+    return "${deps:" + base_dir + str(s) + "}"
