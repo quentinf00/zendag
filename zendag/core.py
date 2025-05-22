@@ -106,7 +106,7 @@ def configure_pipeline(
                 if stage is None:
                     cfg = hydra.compose(name)
                 else:
-                    cfg = hydra.compose(overrides=[f"+{stage}={name}"])²
+                    cfg = hydra.compose(overrides=[f"+{stage}={name}"])
                 _log.debug(f"  Successfully composed configuration for '{stage}/{name}'.")
             except Exception as e:
                 _log.error(
