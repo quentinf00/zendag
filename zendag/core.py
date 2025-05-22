@@ -32,6 +32,7 @@ def configure_pipeline(
     dvc_filename: str = "dvc.yaml",
     run_script: str = "zendag.run",  # Changed from xp_workflow.run
     config_root: Optional[str] = None,  # Optional root for hydra initialization
+    manual_dvc: Optional[dict] = None,
 ) -> None:
     """
     Configures the DVC pipeline based on Hydra-Zen stored configurations.
@@ -189,6 +190,9 @@ def configure_pipeline(
     try:
         # Use OmegaConf to dump YAML for consistency and potentially better handling
         dvc_data = {"stages": dvc_stages}
+        if manual_dvc:
+            OmegaConf.merge(dvc_data, manual_dvc)
+
         # Convert DictConfig back to primitive types suitable for pyyaml dump if needed
         # or use OmegaConf.save if hydra_zen.to_yaml doesn't handle it well (it should)
         dvc_file.write_text(hydra_zen.to_yaml(dvc_data))  # hydra-zen's yaml dump is generally good
