@@ -7,6 +7,8 @@ import hydra  # To access Hydra's runtime config
 import mlflow
 import pandas as pd
 from omegaconf import OmegaConf
+from .core import default_configs_dir_fn, default_stage_dir_fn
+
 
 _log = logging.getLogger(__name__)
 
@@ -16,6 +18,8 @@ ARTIFACTS_ROOT = os.getenv("ARTIFACTS_DIR", "artifacts")  # Default to "artifact
 def mlflow_run(
     wrapped_function,
     project_name=os.environ.get("MLFLOW_PROJECT_NAME", "DefaultProject"),
+    stage_dir_fn=default_stage_dir_fn,
+    configs_dir_fn=default_configs_dir_fn,
 ):
     """
     Decorator to wrap a function execution within nested MLflow runs.
@@ -70,7 +74,7 @@ def mlflow_run(
                             # Use the same logic as configure_pipeline (needs access to configs_dir_fn)
                             # Simplification: Assume standard 'artifacts/' structure for now
                             # TODO: Make config path resolution more robust (maybe pass via env?)
-                            config_path = Path(f"{ARTIFACTS_ROOT}/{stage}/{config_name}.yaml")
+                            config_path = Path(configs_dir_fn(stage)) / f"{config_name}.yaml"
 
                             if config_path.exists():
                                 _log.info(f"Logging config from: {config_path}")
@@ -118,14 +122,14 @@ def mlflow_run(
                     except Exception as e:
                         _log.exception(f"Execution failed for '{run_name}'.")
                         # Log run.log artifact even on failure
-                        log_path = Path(f"{ARTIFACTS_ROOT}/{stage}/{config_name}/run.log")
+                        log_path = Path(stage_dir_fn(stage, config_name)) / "run.log"
                         if log_path and log_path.exists():
                             _log.info(f"Logging run log on failure: {log_path}")
                             mlflow.log_artifact(log_path.as_posix())
                         raise e  # Re-raise the exception
 
                     # Log run.log artifact on success
-                    log_path = Path(f"{ARTIFACTS_ROOT}/{stage}/{config_name}/run.log")
+                    log_path = Path(stage_dir_fn(stage, config_name)) / "run.log"
                     if log_path and log_path.exists():
                         _log.info(f"Logging run log on success: {log_path}")
                         mlflow.log_artifact(log_path.as_posix())
