@@ -13,8 +13,8 @@ from zendag.core import (
 )
 
 from .conftest import (
-    test_project_configs_dir_fn,
-    test_project_stage_dir_fn,
+    fixture_project_configs_dir_fn,
+    fixture_project_stage_dir_fn,
 )
 
 
@@ -61,8 +61,8 @@ def test_configure_pipeline_single_stage_no_deps(
 
     # --- Call configure_pipeline ---
     # Use the test-specific directory functions that point to temp_artifacts_dir
-    stage_dir_func = test_project_stage_dir_fn(temp_artifacts_dir)
-    configs_dir_func = test_project_configs_dir_fn(temp_artifacts_dir)
+    stage_dir_func = fixture_project_stage_dir_fn(temp_artifacts_dir)
+    configs_dir_func = fixture_project_configs_dir_fn(temp_artifacts_dir)
 
     configure_pipeline(
         store=zen_store,
@@ -132,7 +132,7 @@ def test_configure_pipeline_with_inter_stage_deps(
     # Stage 2 depends on stage 1's output
     # For deps to resolve correctly, the hydra resolver for 'stage_dir' needs to be active
     # and the stage_dir_fn for that needs to be the one used by configure_pipeline
-    stage_dir_func = test_project_stage_dir_fn(temp_artifacts_dir)  # This will be used by deps resolver
+    stage_dir_func = fixture_project_stage_dir_fn(temp_artifacts_dir)  # This will be used by deps resolver
 
     ProcessDataConfig = hydra_zen.builds(
         dummy_stage_function,
@@ -147,7 +147,7 @@ def test_configure_pipeline_with_inter_stage_deps(
     zen_store(group=stage2_name)(ProcessDataConfig, name=config2_name)
 
     # --- Call configure_pipeline ---
-    configs_dir_func = test_project_configs_dir_fn(temp_artifacts_dir)
+    configs_dir_func = fixture_project_configs_dir_fn(temp_artifacts_dir)
 
     configure_pipeline(
         store=zen_store,
@@ -194,8 +194,8 @@ def test_configure_pipeline_empty_stage_group(
     configure_pipeline(
         store=zen_store,  # Empty store for this group
         stage_groups=["non_existent_stage"],
-        stage_dir_fn=test_project_stage_dir_fn(temp_artifacts_dir),
-        configs_dir_fn=test_project_configs_dir_fn(temp_artifacts_dir),
+        stage_dir_fn=fixture_project_stage_dir_fn(temp_artifacts_dir),
+        configs_dir_fn=fixture_project_configs_dir_fn(temp_artifacts_dir),
     )
     assert "No configurations found in store for stage group: 'non_existent_stage'" in caplog.text
     dvc_file = temp_cwd / "dvc.yaml"  # Default name
@@ -225,8 +225,8 @@ def test_configure_pipeline_config_resolution_failure(
         configure_pipeline(
             store=zen_store,
             stage_groups=[stage_name],
-            stage_dir_fn=test_project_stage_dir_fn(temp_artifacts_dir),
-            configs_dir_fn=test_project_configs_dir_fn(temp_artifacts_dir),
+            stage_dir_fn=fixture_project_stage_dir_fn(temp_artifacts_dir),
+            configs_dir_fn=fixture_project_configs_dir_fn(temp_artifacts_dir),
         )
 
     assert " Failed add store configurations to hydra" in caplog.text

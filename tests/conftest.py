@@ -61,14 +61,14 @@ def create_dummy_hydra_config_content(
 
 
 # --- Custom Project Directory Functions for Testing ---
-def test_project_stage_dir_fn(temp_artifacts_dir: Path):
+def fixture_project_stage_dir_fn(temp_artifacts_dir: Path):
     def fn(stage: str, name: str) -> str:
         return str(temp_artifacts_dir / stage / name)
 
     return fn
 
 
-def test_project_configs_dir_fn(temp_artifacts_dir: Path):
+def fixture_project_configs_dir_fn(temp_artifacts_dir: Path):
     def fn(stage: str) -> str:
         return str(temp_artifacts_dir / stage)
 

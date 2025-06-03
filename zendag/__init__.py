@@ -1,4 +1,4 @@
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 from .config_utils import deps_path, outs_path
 from .core import configure_pipeline, default_configs_dir_fn, default_stage_dir_fn

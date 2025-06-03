@@ -5,3 +5,5 @@
 .coverage
 **/__pycache__
 **/*.pyc
+todo.md
+test.txt
