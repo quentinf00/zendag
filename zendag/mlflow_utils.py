@@ -30,8 +30,8 @@ def mlflow_run(
     - Logs the Hydra run log file (run.log) as an artifact upon completion or failure.
     - Handles exceptions and ensures logs are captured if possible.
     """
-    def decorator(wrapped_function):
 
+    def decorator(wrapped_function):
         @wraps(wrapped_function)
         def wrapper(*args, **kwargs):
             parent_run_id = None
@@ -142,4 +142,5 @@ def mlflow_run(
                 raise e
 
         return wrapper
+
     return decorator

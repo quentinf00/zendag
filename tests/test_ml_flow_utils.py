@@ -7,6 +7,7 @@ from omegaconf import OmegaConf
 
 from zendag.mlflow_utils import mlflow_run
 
+
 # A simple function to be decorated
 def sample_stage_function(some_arg="default"):
     # print(f"Function called with {some_arg}")
@@ -34,19 +35,18 @@ class TestMlflowRun:
     @pytest.fixture
     def mock_common_dependencies(self):
         """Sets up common mocks for mlflow, OmegaConf, pd, and Path."""
-        with patch("zendag.mlflow_utils.mlflow") as mock_mlflow, \
-             patch("zendag.mlflow_utils.OmegaConf") as mock_omega_conf, \
-             patch("zendag.mlflow_utils.pd") as mock_pd, \
-             patch("zendag.mlflow_utils.Path") as mock_path_constructor:
-
+        with (
+            patch("zendag.mlflow_utils.mlflow") as mock_mlflow,
+            patch("zendag.mlflow_utils.OmegaConf") as mock_omega_conf,
+            patch("zendag.mlflow_utils.pd") as mock_pd,
+            patch("zendag.mlflow_utils.Path") as mock_path_constructor,
+        ):
             # MLflow run contexts
             mock_parent_run = MagicMock()
             mock_parent_run.info.run_id = "test_parent_run_id_123"
             mock_child_run = MagicMock()
             mock_child_run.info.run_id = "test_child_run_id_456"
-            mock_mlflow.start_run.return_value.__enter__.side_effect = [
-                mock_parent_run, mock_child_run
-            ]
+            mock_mlflow.start_run.return_value.__enter__.side_effect = [mock_parent_run, mock_child_run]
             mock_mlflow.start_run.return_value.__exit__.return_value = None
 
             # OmegaConf loading
@@ -56,9 +56,7 @@ class TestMlflowRun:
             mock_omega_conf.to_container.return_value = {"param1": "value1", "nested": {"param2": 10}}
 
             # Pandas normalization
-            mock_pd.json_normalize.return_value.to_dict.return_value = [
-                {"param1": "value1", "nested.param2": 10}
-            ]
+            mock_pd.json_normalize.return_value.to_dict.return_value = [{"param1": "value1", "nested.param2": 10}]
 
             yield {
                 "mlflow": mock_mlflow,
@@ -85,7 +83,7 @@ class TestMlflowRun:
                 return mock_config_dir_intermediate
             elif path_str == self.CONTROLLED_STAGE_DIR_STR:
                 return mock_log_dir_intermediate
-            return MagicMock(spec=Path) # Should not be hit with controlled fns
+            return MagicMock(spec=Path)  # Should not be hit with controlled fns
 
         Path_mock.side_effect = path_constructor_side_effect
 
@@ -99,12 +97,12 @@ class TestMlflowRun:
         mock_pipeline_id_file.write_text = MagicMock()
 
         mock_final_config_file.exists.return_value = config_exists
-        mock_final_config_file.as_posix.return_value = \
+        mock_final_config_file.as_posix.return_value = (
             f"{self.CONTROLLED_CONFIG_DIR_STR}/{self.EXPECTED_CONFIG_NAME}.yaml"
+        )
 
         mock_final_log_file.exists.return_value = log_exists
-        mock_final_log_file.as_posix.return_value = \
-            f"{self.CONTROLLED_STAGE_DIR_STR}/run.log"
+        mock_final_log_file.as_posix.return_value = f"{self.CONTROLLED_STAGE_DIR_STR}/run.log"
 
         return {
             "pipeline_id_file": mock_pipeline_id_file,
@@ -123,9 +121,7 @@ class TestMlflowRun:
         mock_stage_dir_fn = MagicMock(return_value=self.CONTROLLED_STAGE_DIR_STR)
 
         decorated_function = mlflow_run(
-            project_name="TestProject",
-            configs_dir_fn=mock_configs_dir_fn,
-            stage_dir_fn=mock_stage_dir_fn
+            project_name="TestProject", configs_dir_fn=mock_configs_dir_fn, stage_dir_fn=mock_stage_dir_fn
         )(sample_stage_function)
         result = decorated_function("test_arg")
 
@@ -136,9 +132,7 @@ class TestMlflowRun:
         # Parent run (new)
         parent_call_args = deps["mlflow"].start_run.call_args_list[0][1]
         assert parent_call_args["run_id"] is None
-        path_mocks["pipeline_id_file"].write_text.assert_called_once_with(
-            deps["parent_run"].info.run_id + "\n"
-        )
+        path_mocks["pipeline_id_file"].write_text.assert_called_once_with(deps["parent_run"].info.run_id + "\n")
 
         # Child run
         child_call_args = deps["mlflow"].start_run.call_args_list[1][1]
@@ -149,7 +143,7 @@ class TestMlflowRun:
         mock_configs_dir_fn.assert_called_once()
         # Called once for success log, once for potential failure log (though not hit here)
         mock_stage_dir_fn.assert_any_call(self.EXPECTED_STAGE_NAME, self.EXPECTED_CONFIG_NAME)
-        assert mock_stage_dir_fn.call_count >= 1 # Can be 1 or 2 depending on exact code path for logging
+        assert mock_stage_dir_fn.call_count >= 1  # Can be 1 or 2 depending on exact code path for logging
 
         # Config loading and logging
         path_mocks["config_dir_intermediate"].__truediv__.assert_called_once_with(f"{self.EXPECTED_CONFIG_NAME}.yaml")
@@ -170,14 +164,13 @@ class TestMlflowRun:
         mock_configs_dir_fn = MagicMock(return_value=self.CONTROLLED_CONFIG_DIR_STR)
         mock_stage_dir_fn = MagicMock(return_value=self.CONTROLLED_STAGE_DIR_STR)
 
-        decorated_function = mlflow_run(
-            configs_dir_fn=mock_configs_dir_fn,
-            stage_dir_fn=mock_stage_dir_fn
-        )(sample_stage_function)
+        decorated_function = mlflow_run(configs_dir_fn=mock_configs_dir_fn, stage_dir_fn=mock_stage_dir_fn)(
+            sample_stage_function
+        )
         decorated_function("test_arg")
 
         path_mocks["pipeline_id_file"].read_text.assert_called_once()
-        path_mocks["pipeline_id_file"].write_text.assert_not_called() # Should not write if ID existed
+        path_mocks["pipeline_id_file"].write_text.assert_not_called()  # Should not write if ID existed
 
         parent_call_args = deps["mlflow"].start_run.call_args_list[0][1]
         assert parent_call_args["run_id"] == "existing_parent_run_id_789"
@@ -190,10 +183,9 @@ class TestMlflowRun:
         mock_configs_dir_fn = MagicMock(return_value=self.CONTROLLED_CONFIG_DIR_STR)
         mock_stage_dir_fn = MagicMock(return_value=self.CONTROLLED_STAGE_DIR_STR)
 
-        decorated_function = mlflow_run(
-            configs_dir_fn=mock_configs_dir_fn,
-            stage_dir_fn=mock_stage_dir_fn
-        )(sample_stage_function)
+        decorated_function = mlflow_run(configs_dir_fn=mock_configs_dir_fn, stage_dir_fn=mock_stage_dir_fn)(
+            sample_stage_function
+        )
 
         with pytest.raises(ValueError, match="Simulated failure"):
             decorated_function("fail")
@@ -210,15 +202,16 @@ class TestMlflowRun:
         """Test scenario where the config file does not exist."""
         deps = mock_common_dependencies
         # Config does not exist, log file does (for this test)
-        path_mocks = self._setup_path_mocks(deps["Path"], pipeline_id_exists=False, config_exists=False, log_exists=True)
+        path_mocks = self._setup_path_mocks(
+            deps["Path"], pipeline_id_exists=False, config_exists=False, log_exists=True
+        )
 
         mock_configs_dir_fn = MagicMock(return_value=self.CONTROLLED_CONFIG_DIR_STR)
         mock_stage_dir_fn = MagicMock(return_value=self.CONTROLLED_STAGE_DIR_STR)
 
-        decorated_function = mlflow_run(
-            configs_dir_fn=mock_configs_dir_fn,
-            stage_dir_fn=mock_stage_dir_fn
-        )(sample_stage_function)
+        decorated_function = mlflow_run(configs_dir_fn=mock_configs_dir_fn, stage_dir_fn=mock_stage_dir_fn)(
+            sample_stage_function
+        )
         decorated_function("test_arg")
 
         deps["OmegaConf"].load.assert_not_called()
@@ -243,15 +236,16 @@ class TestMlflowRun:
         """Test scenario where run.log does not exist on successful execution."""
         deps = mock_common_dependencies
         # Config exists, log file does NOT
-        path_mocks = self._setup_path_mocks(deps["Path"], pipeline_id_exists=False, config_exists=True, log_exists=False)
+        path_mocks = self._setup_path_mocks(
+            deps["Path"], pipeline_id_exists=False, config_exists=True, log_exists=False
+        )
 
         mock_configs_dir_fn = MagicMock(return_value=self.CONTROLLED_CONFIG_DIR_STR)
         mock_stage_dir_fn = MagicMock(return_value=self.CONTROLLED_STAGE_DIR_STR)
 
-        decorated_function = mlflow_run(
-            configs_dir_fn=mock_configs_dir_fn,
-            stage_dir_fn=mock_stage_dir_fn
-        )(sample_stage_function)
+        decorated_function = mlflow_run(configs_dir_fn=mock_configs_dir_fn, stage_dir_fn=mock_stage_dir_fn)(
+            sample_stage_function
+        )
         decorated_function("test_arg")
 
         # Config artifact should be logged
