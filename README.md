@@ -134,7 +134,7 @@ def my_training_stage(cfg: DictConfig):
 
     * Manages exceptions and MLflow run states.
 
-## Recommended Project Structure (See Cookiecutter Template)
+## Recommended Project Structure 
 
 ```
 my_project/

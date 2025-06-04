@@ -33,6 +33,8 @@ def configure_pipeline(
     run_script: str = "zendag.run",  # Changed from xp_workflow.run
     config_root: Optional[str] = None,  # Optional root for hydra initialization
     manual_dvc: Optional[dict] = None,
+    wdir=None,
+    dvc_stage_name_fn=lambda g, n: f"{g}/{n}",
 ) -> None:
     """
     Configures the DVC pipeline based on Hydra-Zen stored configurations.
@@ -60,9 +62,15 @@ def configure_pipeline(
         config_root: The path relative to which Hydra should initialize (defaults to cwd).
                      Needed if configs are stored outside the cwd.
     """
+
     dvc_stages: Dict[str, Dict[str, Any]] = {}
     all_deps: Dict[Tuple[str, str], List[str]] = {}
     all_outs: Dict[Tuple[str, str], List[str]] = {}
+
+    def wdir_p(p):
+        if wdir is None:
+            return p
+        return str(Path(p).relative_to(Path(wdir)))
 
     _log.info("Initializing Hydra (version_base=1.3) for configuration composition.")
     # Initialize Hydra once if needed, respecting config_root
@@ -115,26 +123,15 @@ def configure_pipeline(
                 )
                 continue
 
-            # 2. Write the composed config (for DVC params tracking)
-            composed_config_path = cfg_dir / f"{name}.yaml"
-            try:
-                composed_config_path.write_text(hydra_zen.to_yaml(cfg))
-                _log.debug(f"  Wrote composed configuration to: {composed_config_path}")
-            except Exception as e:
-                _log.error(
-                    f"  Failed to write composed configuration to {composed_config_path}. Error: {e}",
-                    exc_info=True,
-                )
-                continue
-
+            cfg = OmegaConf.select(cfg, stage)
             # 3. Resolve config to discover deps/outs via side-effects
             current_deps: List[str] = []
             current_outs: List[str] = []
 
             # IMPORTANT: Register resolvers *before* resolve call
             # These resolvers have side-effects (appending to lists)
-            OmegaConf.register_new_resolver("outs", lambda k: current_outs.append(k) or k, replace=True)
-            OmegaConf.register_new_resolver("deps", lambda k: current_deps.append(k) or k, replace=True)
+            OmegaConf.register_new_resolver("outs", lambda k: current_outs.append(wdir_p(k)) or wdir_p(k), replace=True)
+            OmegaConf.register_new_resolver("deps", lambda k: current_deps.append(wdir_p(k)) or wdir_p(k), replace=True)
             # Hydra resolver needs the runtime context for the *specific* stage instance
             OmegaConf.register_new_resolver(
                 "hydra",
@@ -172,19 +169,32 @@ def configure_pipeline(
                 all_deps[stage_key] = []
                 all_outs[stage_key] = []
 
+            # 2. Write the composed config (for DVC params tracking)
+            composed_config_path = cfg_dir / f"{name}.yaml"
+            try:
+                composed_config_path.write_text(hydra_zen.to_yaml(cfg))
+                _log.debug(f"  Wrote composed configuration to: {composed_config_path}")
+            except Exception as e:
+                _log.error(
+                    f"  Failed to write composed configuration to {composed_config_path}. Error: {e}",
+                    exc_info=True,
+                )
+                continue
+
             # 4. Define DVC stage entry
-            dvc_stage_name = f"{stage}/{name}"
+            dvc_stage_name = dvc_stage_name_fn(stage, name)
             # Ensure the output directory path uses the function, not hardcoded 'artifacts'
-            hydra_run_dir = stage_dir_fn(stage, name)
+            hydra_run_dir = wdir_p(stage_dir_fn(stage, name))
             dvc_stages[dvc_stage_name] = dict(
                 cmd=(
                     f"python -m {run_script} "
-                    f"-cd {configs_dir_fn(stage)} -cn {name} "
+                    f"-cd {wdir_p(configs_dir_fn(stage))} -cn {name} "
                     f"hydra.run.dir='{hydra_run_dir}'"  # Use quotes for safety
                 ),
+                **(dict() if wdir is None else dict(wdir=wdir)),
                 deps=all_deps[stage_key],
                 outs=all_outs[stage_key],
-                params=[{f"{composed_config_path.as_posix()}": None}],  # Use as_posix for consistency
+                params=[{f"{wdir_p(composed_config_path)}": None}],  # Use as_posix for consistency
             )
             _log.debug(f"  Defined DVC stage '{dvc_stage_name}'.")
 

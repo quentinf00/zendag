@@ -79,7 +79,6 @@ def test_configure_pipeline_single_stage_no_deps(
     assert composed_config_path.exists()
     composed_cfg = OmegaConf.load(composed_config_path)
     print(OmegaConf.to_yaml(composed_cfg))
-    composed_cfg = OmegaConf.select(composed_cfg, stage_name)
     assert composed_cfg._target_ == "tests.test_core.dummy_stage_function"  # Path to dummy_stage_function
     assert composed_cfg.some_param == 10
     # Check that 'outs' resolved correctly during write (it won't be in the written file, but was used for path)
@@ -179,9 +178,7 @@ def test_configure_pipeline_with_inter_stage_deps(
     # The input_path in the *written* config file should be resolved relative to nothing (i.e., the full path)
     # because the `${deps:...}` resolver just returns `k` after appending to the list.
     # And `${stage_dir...}` resolves to the path.
-    assert OmegaConf.select(s2_cfg, stage2_name).input_path == str(
-        temp_artifacts_dir / stage1_name / config1_name / stage1_output
-    )
+    assert s2_cfg.input_path == str(temp_artifacts_dir / stage1_name / config1_name / stage1_output)
 
 
 def test_configure_pipeline_empty_stage_group(
