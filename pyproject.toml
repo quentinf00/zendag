@@ -98,6 +98,8 @@ path = "zendag/__init__.py"
 # Include necessary files in the source distribution
 include = [
     "/zendag",
+    "/hydra_plugins",
+    "/zendag_hydra_conf",
     "/README.md",
     "/LICENSE",
     # "/docs", # If you want to include raw docs source
