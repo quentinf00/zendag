@@ -1,0 +1,9 @@
+# @package _global_
+hydra:
+  job: 
+    chdir: true
+
+defaults:
+  - override /hydra/callbacks: link_cwd
+
+

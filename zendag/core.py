@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import hydra
+from hydra.core.global_hydra import GlobalHydra
 import hydra_zen
 from omegaconf import OmegaConf
 
@@ -15,18 +16,22 @@ ARTIFACTS_ROOT = os.getenv("ARTIFACTS_DIR", "artifacts")  # Default to "artifact
 # Default stage dir function, can be overridden
 def default_stage_dir_fn(stage: str, name: str) -> str:
     """Generates the default path for a stage's output directory."""
+    if stage is None:
+        return f"{ARTIFACTS_ROOT}/{name}"
     return f"{ARTIFACTS_ROOT}/{stage}/{name}"
 
 
 # Default config dir function, can be overridden
 def default_configs_dir_fn(stage: str) -> str:
     """Generates the default path for storing composed stage configs."""
+    if stage is None:
+        return ARTIFACTS_ROOT
     return f"{ARTIFACTS_ROOT}/{stage}"
 
 
 def configure_pipeline(
-    store: hydra_zen.ZenStore,
-    stage_groups: List[str],
+    store: hydra_zen.ZenStore | None = None,
+    stage_groups: List[str] | None = None,
     stage_dir_fn: Callable[[str, str], str] = default_stage_dir_fn,
     configs_dir_fn: Callable[[str], str] = default_configs_dir_fn,
     dvc_filename: str = "dvc.yaml",
@@ -34,8 +39,9 @@ def configure_pipeline(
     config_root: Optional[str] = None,  # Optional root for hydra initialization
     manual_dvc: Optional[dict] = None,
     wdir=None,
-    dvc_stage_name_fn=lambda g, n: f"{g}/{n}",
-) -> None:
+    dvc_stage_name_fn: Callable | None = None,
+    dry: bool = False
+) -> dict[str, str]:
     """
     Configures the DVC pipeline based on Hydra-Zen stored configurations.
 
@@ -66,11 +72,28 @@ def configure_pipeline(
     dvc_stages: Dict[str, Dict[str, Any]] = {}
     all_deps: Dict[Tuple[str, str], List[str]] = {}
     all_outs: Dict[Tuple[str, str], List[str]] = {}
+    stage_config_paths: Dict[str, Path] = {}
 
-    def wdir_p(p):
-        if wdir is None:
-            return p
-        return str(Path(p).relative_to(Path(wdir)))
+
+
+    if store is None:
+        store = hydra_zen.store
+
+    if dvc_stage_name_fn is None:   
+        dvc_stage_name_fn = (lambda g, n: f"{g}/{n}") if stage_groups is not None else (lambda _,n : n)
+
+    if stage_groups is None:
+        stage_groups = [None]
+
+    if wdir is None:   
+        wdir = stage_dir_fn('','')
+
+    def wdir_p(p, w=True, lk='cwd'):
+        if w:
+            if wdir is None:
+                return p
+            return str(Path(p).relative_to(Path(wdir)))
+        return lk + "/"+ str(p)
 
     _log.info("Initializing Hydra (version_base=1.3) for configuration composition.")
     # Initialize Hydra once if needed, respecting config_root
@@ -115,6 +138,7 @@ def configure_pipeline(
                     cfg = hydra.compose(name)
                 else:
                     cfg = hydra.compose(overrides=[f"+{stage}={name}"])
+                    cfg = OmegaConf.select(cfg, stage)
                 _log.debug(f"  Successfully composed configuration for '{stage}/{name}'.")
             except Exception as e:
                 _log.error(
@@ -123,7 +147,6 @@ def configure_pipeline(
                 )
                 continue
 
-            cfg = OmegaConf.select(cfg, stage)
             # 3. Resolve config to discover deps/outs via side-effects
             current_deps: List[str] = []
             current_outs: List[str] = []
@@ -131,24 +154,9 @@ def configure_pipeline(
             # IMPORTANT: Register resolvers *before* resolve call
             # These resolvers have side-effects (appending to lists)
             OmegaConf.register_new_resolver("outs", lambda k: current_outs.append(wdir_p(k)) or wdir_p(k), replace=True)
-            OmegaConf.register_new_resolver("deps", lambda k: current_deps.append(wdir_p(k)) or wdir_p(k), replace=True)
+        
+            OmegaConf.register_new_resolver("deps", lambda k, w: current_deps.append(wdir_p(k, w)) or wdir_p(k, w), replace=True)
             # Hydra resolver needs the runtime context for the *specific* stage instance
-            OmegaConf.register_new_resolver(
-                "hydra",
-                lambda k, _parent_, _root_: OmegaConf.select(
-                    OmegaConf.create({"runtime": {"output_dir": stage_dir_fn(stage, name)}}),
-                    k,
-                    throw_on_missing=True,
-                ),
-                replace=True,
-                use_cache=False,  # Ensure it recalculates for each stage
-            )
-            # Allow deps/outs to resolve stage_dir_fn if needed
-            OmegaConf.register_new_resolver(
-                "stage_dir",
-                lambda s_name, c_name: stage_dir_fn(s_name, c_name),
-                replace=True,
-            )
 
             _log.debug(f"  Resolving configuration for '{stage}/{name}' to discover dependencies and outputs...")
             try:
@@ -183,6 +191,7 @@ def configure_pipeline(
 
             # 4. Define DVC stage entry
             dvc_stage_name = dvc_stage_name_fn(stage, name)
+            stage_config_paths[dvc_stage_name] = composed_config_path
             # Ensure the output directory path uses the function, not hardcoded 'artifacts'
             hydra_run_dir = wdir_p(stage_dir_fn(stage, name))
             dvc_stages[dvc_stage_name] = dict(
@@ -212,3 +221,5 @@ def configure_pipeline(
         _log.info(f"Successfully wrote DVC pipeline configuration to: {dvc_file}")
     except Exception as e:
         _log.error(f"Failed to write DVC pipeline file {dvc_file}. Error: {e}", exc_info=True)
+    GlobalHydra.instance().clear()    
+    return stage_config_paths

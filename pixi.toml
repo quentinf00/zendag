@@ -11,8 +11,6 @@ version = "0.1.0"
 [dependencies]
 python = "3.11.*"
 
-[feature.dev.pypi-dependencies]
+[pypi-dependencies]
 zendag = {path= ".", extras=["dev"], editable=true}
 
-[environments]
-dev = ['dev']
