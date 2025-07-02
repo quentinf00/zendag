@@ -106,7 +106,7 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 # Include necessary files in the wheel
-packages = ["zendag", "hydra_plugins", "hydra_conf"]
+packages = ["zendag", "hydra_plugins", "zendag_hydra_conf"]
 
 
 [tool.ruff]
