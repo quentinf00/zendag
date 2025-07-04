@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sharing Data &amp; Models: DVC Versioning with Intake Catalogs (using fsspec) &mdash; ZenDag 0.1.5 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" type="text/css" />
+      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=59fadc99"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Config Composition &amp; Reusable Components with ZenDag" href="config_composition.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ZenDag
+          </a>
+              <div class="version">
+                0.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">ZenDag Quickstart: Your First Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dags_and_caching.html">Automatic DAGs &amp; DVC Caching with ZenDag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_composition.html">Config Composition &amp; Reusable Components with ZenDag</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Sharing Data &amp; Models: DVC Versioning with Intake Catalogs (using fsspec)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#recap-dvc-for-versioning-artifacts">Recap: DVC for Versioning Artifacts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-1-push-dvc-data-to-a-remote">Step 1: Push DVC Data to a Remote</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-2-tag-a-specific-version-in-git">Step 2: Tag a Specific Version in Git</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-3-install-intake-and-fsspec-dvc-support">Step 3: Install Intake and fsspec DVC support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-4-creating-an-intake-catalog-catalog-yaml-with-fsspec">Step 4: Creating an Intake Catalog (<code class="docutils literal notranslate"><span class="pre">catalog.yaml</span></code>) with fsspec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-5-using-the-intake-catalog-fsspec-version">Step 5: Using the Intake Catalog (fsspec version)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#benefits-of-the-fsspec-approach">Benefits of the <code class="docutils literal notranslate"><span class="pre">fsspec</span></code> Approach</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ZenDag</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Sharing Data &amp; Models: DVC Versioning with Intake Catalogs (using fsspec)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/sharing_with_intake.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="sharing-data-models-dvc-versioning-with-intake-catalogs-using-fsspec">
+<h1>Sharing Data &amp; Models: DVC Versioning with Intake Catalogs (using fsspec)<a class="headerlink" href="#sharing-data-models-dvc-versioning-with-intake-catalogs-using-fsspec" title="Link to this heading"></a></h1>
+<p>Once you’ve used ZenDag and DVC to produce versioned datasets and models, how do you easily share and consume them? <a class="reference external" href="https://intake.readthedocs.io/">Intake</a> is a lightweight Python library for finding, investigating, loading, and disseminating data. By leveraging <code class="docutils literal notranslate"><span class="pre">fsspec</span></code> and its DVC filesystem implementation (<code class="docutils literal notranslate"><span class="pre">dvcfs</span></code>), Intake provides a modern and flexible way to access DVC-versioned assets.</p>
+<section id="recap-dvc-for-versioning-artifacts">
+<h2>Recap: DVC for Versioning Artifacts<a class="headerlink" href="#recap-dvc-for-versioning-artifacts" title="Link to this heading"></a></h2>
+<p>As covered previously, ZenDag and DVC work together to version your data. When a stage produces an output like <code class="docutils literal notranslate"><span class="pre">artifacts/transform/default_transform/output.csv</span></code>, DVC creates a <code class="docutils literal notranslate"><span class="pre">.dvc</span></code> file tracking its metadata and content hash.</p>
+</section>
+<section id="step-1-push-dvc-data-to-a-remote">
+<h2>Step 1: Push DVC Data to a Remote<a class="headerlink" href="#step-1-push-dvc-data-to-a-remote" title="Link to this heading"></a></h2>
+<p>To share data, it must be in a DVC remote storage (S3, GCS, SSH, etc.).</p>
+<ol class="arabic">
+<li><p><strong>Add a remote</strong> (if not done already):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Example for a local directory remote (for testing)</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span>/tmp/my_dvc_remote<span class="w"> </span>
+dvc<span class="w"> </span>remote<span class="w"> </span>add<span class="w"> </span>-d<span class="w"> </span>mylocalremote<span class="w"> </span>/tmp/my_dvc_remote
+</pre></div>
+</div>
+</li>
+<li><p><strong>Push data to the remote:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>dvc<span class="w"> </span>push<span class="w"> </span>-r<span class="w"> </span>mylocalremote
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="step-2-tag-a-specific-version-in-git">
+<h2>Step 2: Tag a Specific Version in Git<a class="headerlink" href="#step-2-tag-a-specific-version-in-git" title="Link to this heading"></a></h2>
+<p>Git tags mark specific, stable versions of your DVC metadata (<code class="docutils literal notranslate"><span class="pre">.dvc</span></code> files and <code class="docutils literal notranslate"><span class="pre">dvc.lock</span></code>).</p>
+<ol class="arabic">
+<li><p>Commit all relevant <code class="docutils literal notranslate"><span class="pre">.dvc</span></code> files and <code class="docutils literal notranslate"><span class="pre">dvc.lock</span></code>.</p></li>
+<li><p>Create and push a tag:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>tag<span class="w"> </span>v1.0.0-data<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Stable processed dataset version 1.0.0 from quickstart&quot;</span>
+git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>v1.0.0-data
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="step-3-install-intake-and-fsspec-dvc-support">
+<h2>Step 3: Install Intake and fsspec DVC support<a class="headerlink" href="#step-3-install-intake-and-fsspec-dvc-support" title="Link to this heading"></a></h2>
+<p>In the environment where you’ll <em>consume</em> the data, ensure you have:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>intake<span class="w"> </span>pandas<span class="w"> </span><span class="c1"># For CSV reading</span>
+<span class="c1"># For DVC fsspec support, DVC needs to be installed with fsspec extras, or dvcfs separately</span>
+pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;dvc[fsspec]&quot;</span><span class="w"> </span><span class="c1"># Or ensure dvcfs is available if dvc is already installed</span>
+<span class="c1"># If you plan to read other formats, install relevant intake plugins, e.g.:</span>
+<span class="c1"># pip install intake-xarray intake-parquet</span>
+</pre></div>
+</div>
+</section>
+<section id="step-4-creating-an-intake-catalog-catalog-yaml-with-fsspec">
+<h2>Step 4: Creating an Intake Catalog (<code class="docutils literal notranslate"><span class="pre">catalog.yaml</span></code>) with fsspec<a class="headerlink" href="#step-4-creating-an-intake-catalog-catalog-yaml-with-fsspec" title="Link to this heading"></a></h2>
+<p>An Intake catalog (YAML file) describes your data sources. We’ll use the <code class="docutils literal notranslate"><span class="pre">fsspec</span></code> <code class="docutils literal notranslate"><span class="pre">dvc://</span></code> URL scheme.</p>
+<p>Create <code class="docutils literal notranslate"><span class="pre">catalog.yaml</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># catalog.yaml (using fsspec dvc:// syntax)</span>
+<span class="nt">sources</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">processed_dataset_v1_fsspec</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">driver</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">csv</span><span class="w"> </span><span class="c1"># Intake driver for CSV files (uses pandas by default)</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Version</span><span class="nv"> </span><span class="s">1.0.0</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">processed</span><span class="nv"> </span><span class="s">dataset</span><span class="nv"> </span><span class="s">(fsspec</span><span class="nv"> </span><span class="s">dvc</span><span class="nv"> </span><span class="s">access).&quot;</span>
+<span class="w">    </span><span class="nt">args</span><span class="p">:</span>
+<span class="w">      </span><span class="c1"># urlpath uses the dvc:// fsspec protocol.</span>
+<span class="w">      </span><span class="c1"># The part after dvc:// (e.g., your_username/your_project/) is often conventional</span>
+<span class="w">      </span><span class="c1"># as target_options.url primarily defines the Git repo.</span>
+<span class="w">      </span><span class="nt">urlpath</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;dvc://your_username_placeholder/your_zendag_project_placeholder/artifacts/transform/default_transform/data/processed/output.csv&quot;</span><span class="w"> </span><span class="c1"># !!! REPLACE owner/repo part !!!</span>
+<span class="w">      </span><span class="nt">storage_options</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># target_options specifies the Git repository details for dvcfs</span>
+<span class="w">        </span><span class="nt">target_options</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://github.com/your_username_placeholder/your_zendag_project_placeholder.git&quot;</span><span class="w"> </span><span class="c1"># !!! REPLACE THIS !!!</span>
+<span class="w">        </span><span class="c1"># rev is the Git revision (tag, branch, or commit hash)</span>
+<span class="w">        </span><span class="nt">rev</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v1.0.0-data&quot;</span>
+<span class="w">        </span><span class="c1"># remote: &quot;mylocalremote&quot; # Optional: DVC remote if not default/auto-discoverable</span>
+<span class="w">      </span><span class="c1"># Arguments for the &#39;csv&#39; driver (passed to pandas.read_csv)</span>
+<span class="w">      </span><span class="nt">csv_kwargs</span><span class="p">:</span><span class="w"> </span>
+<span class="w">        </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&quot;id&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;int&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;value&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;float&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;scaled_value&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;float&quot;</span><span class="p p-Indicator">}</span>
+
+<span class="w">  </span><span class="c1"># Example for a NetCDF file, assuming intake-xarray is installed</span>
+<span class="w">  </span><span class="c1"># weather_model_output_v2_fsspec:</span>
+<span class="w">  </span><span class="c1">#   driver: netcdf </span>
+<span class="w">  </span><span class="c1">#   description: &quot;Weather model output v2 (NetCDF via fsspec dvc).&quot;</span>
+<span class="w">  </span><span class="c1">#   args:</span>
+<span class="w">  </span><span class="c1">#     urlpath: &quot;dvc://your_username_placeholder/your_zendag_project_placeholder/data/models/weather_v2.nc&quot; # !!! REPLACE !!!</span>
+<span class="w">  </span><span class="c1">#     chunks: {} # Argument for xarray.open_dataset</span>
+<span class="w">  </span><span class="c1">#     storage_options:</span>
+<span class="w">  </span><span class="c1">#       target_options:</span>
+<span class="w">  </span><span class="c1">#         url: &quot;https://github.com/your_username_placeholder/your_zendag_project_placeholder.git&quot; # !!! REPLACE !!!</span>
+<span class="w">  </span><span class="c1">#       rev: &quot;weather-model-v2-tag&quot;</span>
+</pre></div>
+</div>
+<p><strong>Important:</strong></p>
+<ul class="simple">
+<li><p>Replace placeholders like <code class="docutils literal notranslate"><span class="pre">your_username_placeholder/your_zendag_project_placeholder</span></code> with your actual Git repository owner and name.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">path</span></code> part of the <code class="docutils literal notranslate"><span class="pre">urlpath</span></code> must be the exact path to the data file as tracked by DVC within that repository structure.</p></li>
+<li><p>Ensure the Git <code class="docutils literal notranslate"><span class="pre">rev</span></code> (e.g., tag <code class="docutils literal notranslate"><span class="pre">v1.0.0-data</span></code>) exists in your Git repository.</p></li>
+</ul>
+</section>
+<section id="step-5-using-the-intake-catalog-fsspec-version">
+<h2>Step 5: Using the Intake Catalog (fsspec version)<a class="headerlink" href="#step-5-using-the-intake-catalog-fsspec-version" title="Link to this heading"></a></h2>
+<p>In any Python script or Jupyter Notebook:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">intake</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span> <span class="c1"># For type hint and checking</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="c1"># --- Create a dummy catalog.yaml for this notebook execution ---</span>
+<span class="c1"># In a real scenario, this file would exist independently.</span>
+<span class="c1"># !!! REPLACE with your actual Git repo URL and path for this to work beyond this notebook !!!</span>
+<span class="n">DUMMY_GIT_OWNER</span> <span class="o">=</span> <span class="s2">&quot;your_username_placeholder&quot;</span>
+<span class="n">DUMMY_GIT_REPO_NAME</span> <span class="o">=</span> <span class="s2">&quot;your_zendag_project_placeholder&quot;</span>
+<span class="c1"># Construct a file:// URL if your repo is local for testing, otherwise use https://</span>
+<span class="c1"># For this example, we&#39;ll assume a local path could be used for placeholder.</span>
+<span class="c1"># A real remote test would require cloning this ZenDag repo and pushing it to your own GitHub.</span>
+<span class="c1"># For simplicity in a self-contained notebook, we&#39;ll mock the access or it will fail if placeholders aren&#39;t replaced.</span>
+<span class="n">DUMMY_GIT_REPO_URL_FOR_FSSPEC</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;https_IS_A_PLACEHOLDER_REPLACE_ME_github.com/</span><span class="si">{</span><span class="n">DUMMY_GIT_OWNER</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">DUMMY_GIT_REPO_NAME</span><span class="si">}</span><span class="s2">.git&quot;</span>
+<span class="c1"># If testing locally against a checked-out version of the project (that has DVC setup):</span>
+<span class="c1"># DUMMY_GIT_REPO_URL_FOR_FSSPEC = f&quot;file://{os.path.abspath(&#39;.&#39;)}&quot; # Points to current dir if it&#39;s the git repo root</span>
+
+
+<span class="k">if</span> <span class="s2">&quot;PLACEHOLDER_REPLACE_ME&quot;</span> <span class="ow">in</span> <span class="n">DUMMY_GIT_REPO_URL_FOR_FSSPEC</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;WARNING: DUMMY_GIT_REPO_URL_FOR_FSSPEC (&#39;</span><span class="si">{</span><span class="n">DUMMY_GIT_REPO_URL_FOR_FSSPEC</span><span class="si">}</span><span class="s2">&#39;) is a placeholder.&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Replace it with your actual Git repo URL and adjust paths for this example to fully work.&quot;</span><span class="p">)</span>
+
+<span class="n">catalog_fsspec_content</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">sources:</span>
+<span class="s2">  processed_dataset_v1_fsspec:</span>
+<span class="s2">    driver: csv </span>
+<span class="s2">    description: &quot;Version 1.0.0 of the processed dataset (fsspec dvc access).&quot;</span>
+<span class="s2">    args:</span>
+<span class="s2">      urlpath: &quot;dvc://</span><span class="si">{</span><span class="n">DUMMY_GIT_OWNER</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">DUMMY_GIT_REPO_NAME</span><span class="si">}</span><span class="s2">/artifacts/transform/default_transform/data/processed/output.csv&quot;</span>
+<span class="s2">      storage_options:</span>
+<span class="s2">        target_options:</span>
+<span class="s2">          url: &quot;</span><span class="si">{</span><span class="n">DUMMY_GIT_REPO_URL_FOR_FSSPEC</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="s2">        rev: &quot;v1.0.0-data&quot; # Ensure this tag exists in your repo, or use a valid commit/branch</span>
+<span class="s2">      csv_kwargs: </span>
+<span class="s2">        dtype: </span><span class="se">{{</span><span class="s2">&quot;id&quot;: &quot;int&quot;, &quot;value&quot;: &quot;float&quot;, &quot;scaled_value&quot;: &quot;float&quot;</span><span class="se">}}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;temp_fsspec_catalog.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">catalog_fsspec_content</span><span class="p">)</span>
+<span class="c1"># --- End dummy catalog creation ---</span>
+
+
+<span class="c1"># Ensure your temp_fsspec_catalog.yaml is in the current directory or provide its path</span>
+<span class="n">catalog_fsspec</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">catalog_fsspec</span> <span class="o">=</span> <span class="n">intake</span><span class="o">.</span><span class="n">open_catalog</span><span class="p">(</span><span class="s2">&quot;temp_fsspec_catalog.yaml&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error opening fsspec catalog: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;This example may not fully run if the Git repo URL is a placeholder or the specified rev/path doesn&#39;t exist.&quot;</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">catalog_fsspec</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Available sources in fsspec catalog:&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">catalog_fsspec</span><span class="p">))</span>
+    
+    <span class="n">dataset_entry_name_fsspec</span> <span class="o">=</span> <span class="s1">&#39;processed_dataset_v1_fsspec&#39;</span>
+    <span class="k">if</span> <span class="n">dataset_entry_name_fsspec</span> <span class="ow">in</span> <span class="n">catalog_fsspec</span><span class="p">:</span>
+        <span class="n">dataset_entry_fsspec</span> <span class="o">=</span> <span class="n">catalog_fsspec</span><span class="p">[</span><span class="n">dataset_entry_name_fsspec</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Dataset entry &#39;</span><span class="si">{</span><span class="n">dataset_entry_name_fsspec</span><span class="si">}</span><span class="s2">&#39; description:&quot;</span><span class="p">,</span> <span class="n">dataset_entry_fsspec</span><span class="o">.</span><span class="n">description</span><span class="p">)</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Attempting to read data using fsspec dvc (this might take a moment for the first time if accessing a remote repo)...&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">df_fsspec</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">=</span> <span class="n">dataset_entry_fsspec</span><span class="o">.</span><span class="n">read</span><span class="p">()</span> <span class="c1"># `read()` loads the data</span>
+            
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">First 5 rows of the loaded DataFrame (via fsspec dvc):&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">df_fsspec</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">DataFrame shape: </span><span class="si">{</span><span class="n">df_fsspec</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">ERROR reading data source &#39;</span><span class="si">{</span><span class="n">dataset_entry_name_fsspec</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;This often happens if:&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - The Git repo URL (&#39;</span><span class="si">{</span><span class="n">DUMMY_GIT_REPO_URL_FOR_FSSPEC</span><span class="si">}</span><span class="s2">&#39;) is a placeholder, incorrect, or inaccessible.&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - The Git revision (tag/commit) &#39;v1.0.0-data&#39; does not exist in that repo or doesn&#39;t contain the DVC metadata for the specified path.&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - The DVC remote (if needed) is not accessible or the data for the path has not been pushed to it.&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - &#39;dvc&#39; CLI is not installed, or &#39;dvcfs&#39; (required by fsspec&#39;s dvc:// protocol) is not available.&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - The &#39;driver: csv&#39; needs pandas or an appropriate backend installed in your Python environment.&quot;</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Data source &#39;</span><span class="si">{</span><span class="n">dataset_entry_name_fsspec</span><span class="si">}</span><span class="s2">&#39; not found in catalog.&quot;</span><span class="p">)</span>
+
+<span class="c1"># Clean up dummy catalog</span>
+<span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;temp_fsspec_catalog.yaml&quot;</span><span class="p">):</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">&quot;temp_fsspec_catalog.yaml&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>What happens when you call <code class="docutils literal notranslate"><span class="pre">dataset_entry.read()</span></code> with this fsspec setup:</strong></p>
+<ol class="arabic simple">
+<li><p>Intake identifies the <code class="docutils literal notranslate"><span class="pre">driver</span></code> (e.g., <code class="docutils literal notranslate"><span class="pre">csv</span></code>).</p></li>
+<li><p>It sees the <code class="docutils literal notranslate"><span class="pre">urlpath</span></code> starting with <code class="docutils literal notranslate"><span class="pre">dvc://</span></code>.</p></li>
+<li><p>It uses <code class="docutils literal notranslate"><span class="pre">fsspec</span></code> with the <code class="docutils literal notranslate"><span class="pre">dvcfs</span></code> implementation to open this URL.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dvcfs</span></code> uses the <code class="docutils literal notranslate"><span class="pre">storage_options</span></code> (like <code class="docutils literal notranslate"><span class="pre">target_options.url</span></code> for the Git repo and <code class="docutils literal notranslate"><span class="pre">rev</span></code> for the Git revision) to:</p>
+<ul class="simple">
+<li><p>Access the specified Git repository at the given revision (cloning/checking out to a temporary location if needed).</p></li>
+<li><p>Find the DVC metadata for the file path within the <code class="docutils literal notranslate"><span class="pre">urlpath</span></code>.</p></li>
+<li><p>Use DVC internally to make the actual data file available (pulling from a DVC remote if necessary).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dvcfs</span></code> then provides a file-like object to this data.</p></li>
+</ul>
+</li>
+<li><p>Intake’s chosen <code class="docutils literal notranslate"><span class="pre">driver</span></code> (e.g., the CSV driver) then reads from this file-like object, applying any specified <code class="docutils literal notranslate"><span class="pre">args</span></code> (like <code class="docutils literal notranslate"><span class="pre">csv_kwargs</span></code>).</p></li>
+</ol>
+</section>
+<section id="benefits-of-the-fsspec-approach">
+<h2>Benefits of the <code class="docutils literal notranslate"><span class="pre">fsspec</span></code> Approach<a class="headerlink" href="#benefits-of-the-fsspec-approach" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Standardization:</strong> Uses the widely adopted <code class="docutils literal notranslate"><span class="pre">fsspec</span></code> interface, making it compatible with many libraries.</p></li>
+<li><p><strong>Flexibility:</strong> You choose the Intake <code class="docutils literal notranslate"><span class="pre">driver</span></code> based on your data format (CSV, Parquet, NetCDF, Zarr, etc.), and <code class="docutils literal notranslate"><span class="pre">dvcfs</span></code> handles getting the DVC-versioned bytes to that driver.</p></li>
+<li><p><strong>Ecosystem:</strong> Leverages the strengths of both Intake (cataloging, unified API) and <code class="docutils literal notranslate"><span class="pre">fsspec</span></code> (versatile file system access).</p></li>
+</ul>
+<p>This <code class="docutils literal notranslate"><span class="pre">fsspec</span></code>-based method is the modern and generally recommended way to use Intake with DVC-versioned data, offering greater flexibility and integration with the broader Python data ecosystem.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="config_composition.html" class="btn btn-neutral float-left" title="Config Composition &amp; Reusable Components with ZenDag" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Quentin Febvre.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

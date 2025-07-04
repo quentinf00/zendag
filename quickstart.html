@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZenDag Quickstart: Your First Pipeline &mdash; ZenDag 0.1.5 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" type="text/css" />
+      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=59fadc99"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Automatic DAGs &amp; DVC Caching with ZenDag" href="dags_and_caching.html" />
+    <link rel="prev" title="ZenDag Documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ZenDag
+          </a>
+              <div class="version">
+                0.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ZenDag Quickstart: Your First Pipeline</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-1-write-your-python-stage-function">Step 1: Write Your Python Stage Function</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-2-define-function-call-as-configuration-hydra-zen">Step 2: Define Function Call as Configuration (Hydra-Zen)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-3-select-configs-configure-pipeline-configure-py">Step 3: Select Configs &amp; Configure Pipeline (<code class="docutils literal notranslate"><span class="pre">configure.py</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-4-run-the-pipeline-with-dvc">Step 4: Run the Pipeline with DVC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#data-versioning-in-action">Data Versioning in Action</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#conclusion">Conclusion</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dags_and_caching.html">Automatic DAGs &amp; DVC Caching with ZenDag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config_composition.html">Config Composition &amp; Reusable Components with ZenDag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sharing_with_intake.html">Sharing Data &amp; Models: DVC Versioning with Intake Catalogs (using fsspec)</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ZenDag</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ZenDag Quickstart: Your First Pipeline</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/quickstart.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="zendag-quickstart-your-first-pipeline">
+<h1>ZenDag Quickstart: Your First Pipeline<a class="headerlink" href="#zendag-quickstart-your-first-pipeline" title="Link to this heading"></a></h1>
+<p>Welcome to ZenDag! This guide will walk you through creating a simple, single-stage ML pipeline. We’ll cover:</p>
+<ol class="arabic simple">
+<li><p>Writing a Python function for a pipeline stage.</p></li>
+<li><p>Defining its configuration using Hydra-Zen.</p></li>
+<li><p>Using ZenDag to generate a DVC pipeline.</p></li>
+<li><p>Running the pipeline with DVC.</p></li>
+<li><p>Seeing basic data versioning and MLflow logging in action.</p></li>
+</ol>
+<p>ZenDag aims to simplify MLOps by integrating <a class="reference internal" href="#httpsa://hydra.cc/"><span class="xref myst">Hydra</span></a> for configuration, <a class="reference external" href="https://dvc.org/">DVC</a> for data/pipeline versioning, and <a class="reference external" href="https://mlflow.org/">MLflow</a> for experiment tracking.</p>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
+<p>Before you start, make sure you have:</p>
+<ul class="simple">
+<li><p>A Python environment with <code class="docutils literal notranslate"><span class="pre">zendag</span></code>, <code class="docutils literal notranslate"><span class="pre">pandas</span></code>, <code class="docutils literal notranslate"><span class="pre">hydra-core</span></code>, <code class="docutils literal notranslate"><span class="pre">hydra-zen</span></code>, <code class="docutils literal notranslate"><span class="pre">dvc</span></code>, and <code class="docutils literal notranslate"><span class="pre">mlflow</span></code> installed. If you used the ZenDag Cookiecutter template, <code class="docutils literal notranslate"><span class="pre">pixi</span> <span class="pre">install</span></code> should set this up.</p></li>
+<li><p>An MLflow tracking server running (or be prepared for MLflow to use local file storage). <code class="docutils literal notranslate"><span class="pre">mlflow</span> <span class="pre">ui</span></code> in a separate terminal can start a local server.</p></li>
+</ul>
+</section>
+<section id="step-1-write-your-python-stage-function">
+<h2>Step 1: Write Your Python Stage Function<a class="headerlink" href="#step-1-write-your-python-stage-function" title="Link to this heading"></a></h2>
+<p>With ZenDag, you write Python functions as you normally would. The main constraint is:</p>
+<blockquote>
+<div><p><strong>All file paths your function reads from or writes to must be arguments to that function.</strong></p>
+</div></blockquote>
+<p>Let’s create a simple function that reads a CSV, scales a column, and writes a new CSV. We’ll also use the <code class="docutils literal notranslate"><span class="pre">&#64;mlflow_run</span></code> decorator from ZenDag to automatically handle MLflow setup.</p>
+<p>Create a file <code class="docutils literal notranslate"><span class="pre">src/my_project/stages/simple_transform.py</span></code> (assuming your project is <code class="docutils literal notranslate"><span class="pre">my_project</span></code>):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># src/my_project/stages/simple_transform.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">mlflow</span> <span class="c1"># We can use mlflow directly for custom logging</span>
+
+<span class="c1"># Make sure zendag is importable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zendag.mlflow_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">mlflow_run</span>
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="nd">@mlflow_run</span> <span class="c1"># ZenDag decorator for MLflow integration</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">transform_data</span><span class="p">(</span><span class="n">input_csv_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_csv_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">scale_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reads data from input_csv_path, multiplies &#39;value&#39; column by scale_factor,</span>
+<span class="sd">    and saves to output_csv_path.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Starting data transformation...&quot;</span><span class="p">)</span>
+    <span class="n">Path</span><span class="p">(</span><span class="n">input_csv_path</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="c1"># Ensure dir exists for dummy data creation</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">input_csv_path</span><span class="p">)</span>
+
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;scaled_value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">scale_factor</span>
+
+    <span class="n">output_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_csv_path</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span>
+    <span class="n">output_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Writing </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="si">}</span><span class="s2"> rows to: </span><span class="si">{</span><span class="n">output_csv_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">output_csv_path</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># Custom MLflow logging (parameters from config are logged automatically by @mlflow_run)</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">log_param</span><span class="p">(</span><span class="s2">&quot;stage_specific_scale_factor&quot;</span><span class="p">,</span> <span class="n">scale_factor</span><span class="p">)</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">log_metric</span><span class="p">(</span><span class="s2">&quot;num_rows_processed&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">))</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">log_metric</span><span class="p">(</span><span class="s2">&quot;sum_scaled_value&quot;</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;scaled_value&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Data transformation complete.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;output_file&quot;</span><span class="p">:</span> <span class="n">output_csv_path</span><span class="p">,</span> <span class="s2">&quot;rows_processed&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)}</span>
+</pre></div>
+</div>
+</section>
+<section id="step-2-define-function-call-as-configuration-hydra-zen">
+<h2>Step 2: Define Function Call as Configuration (Hydra-Zen)<a class="headerlink" href="#step-2-define-function-call-as-configuration-hydra-zen" title="Link to this heading"></a></h2>
+<p>Next, we’ll use <a class="reference external" href="https://mit-ll-responsible-ai.github.io/hydra-zen/">Hydra-Zen</a> to define the <em>call</em> to our <code class="docutils literal notranslate"><span class="pre">transform_data</span></code> function as a configuration. This is where we link the function arguments (our file paths) to DVC’s dependency and output tracking using ZenDag utilities.</p>
+<blockquote>
+<div><p><strong>Crucial:</strong> Path arguments in your Hydra-Zen config must use <code class="docutils literal notranslate"><span class="pre">zendag.config_utils.deps_path(&quot;path/to/input&quot;)</span></code> for inputs and <code class="docutils literal notranslate"><span class="pre">zendag.config_utils.outs_path(&quot;path/to/output&quot;)</span></code> for outputs.</p>
+</div></blockquote>
+<p>Create <code class="docutils literal notranslate"><span class="pre">configs/transform_config.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># configs/transform_config.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hydra_zen</span><span class="w"> </span><span class="kn">import</span> <span class="n">builds</span><span class="p">,</span> <span class="n">store</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zendag.config_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">deps_path</span><span class="p">,</span> <span class="n">outs_path</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">my_project.stages.simple_transform</span><span class="w"> </span><span class="kn">import</span> <span class="n">transform_data</span>
+
+<span class="c1"># Define the configuration for calling transform_data</span>
+<span class="n">TransformConfig</span> <span class="o">=</span> <span class="n">builds</span><span class="p">(</span>
+    <span class="n">transform_data</span><span class="p">,</span>  <span class="c1"># The Python function this config represents</span>
+    <span class="n">populate_full_signature</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Includes all args from transform_data</span>
+
+    <span class="c1"># Map function arguments to DVC tracked paths:</span>
+    <span class="n">input_csv_path</span><span class="o">=</span><span class="n">deps_path</span><span class="p">(</span><span class="s2">&quot;data/raw/input.csv&quot;</span><span class="p">),</span>  <span class="c1"># DVC dependency</span>
+    <span class="n">output_csv_path</span><span class="o">=</span><span class="n">outs_path</span><span class="p">(</span><span class="s2">&quot;data/processed/output.csv&quot;</span><span class="p">),</span>  <span class="c1"># DVC output</span>
+
+    <span class="c1"># Set other parameters for the function call</span>
+    <span class="n">scale_factor</span><span class="o">=</span><span class="mf">1.5</span>
+<span class="p">)</span>
+
+<span class="c1"># Register this configuration with Hydra-Zen&#39;s store</span>
+<span class="c1"># &#39;group&#39; is the DVC stage group, &#39;name&#39; is a specific config instance</span>
+<span class="n">store</span><span class="p">(</span><span class="n">TransformConfig</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s2">&quot;transform&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;default_transform&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="step-3-select-configs-configure-pipeline-configure-py">
+<h2>Step 3: Select Configs &amp; Configure Pipeline (<code class="docutils literal notranslate"><span class="pre">configure.py</span></code>)<a class="headerlink" href="#step-3-select-configs-configure-pipeline-configure-py" title="Link to this heading"></a></h2>
+<p>Now, we create a <code class="docutils literal notranslate"><span class="pre">configure.py</span></code> script in our project root. This script will:</p>
+<ol class="arabic simple">
+<li><p>Import our defined configurations (which registers them with Hydra-Zen’s global store).</p></li>
+<li><p>Tell ZenDag which stage groups and config instances to include in our DVC pipeline.</p></li>
+<li><p>Call <code class="docutils literal notranslate"><span class="pre">zendag.core.configure_pipeline</span></code> to generate <code class="docutils literal notranslate"><span class="pre">dvc.yaml</span></code>.</p></li>
+</ol>
+<p>Here’s a minimal <code class="docutils literal notranslate"><span class="pre">configure.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># configure.py (in project root)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">hydra_zen</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span> <span class="c1"># For creating dummy data</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">zendag.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">configure_pipeline</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">configs.transform_config</span>
+
+<span class="n">store</span> <span class="o">=</span> <span class="n">hydra_zen</span><span class="o">.</span><span class="n">store</span>
+
+<span class="c1"># List of DVC stage groups to include in the pipeline</span>
+<span class="n">STAGE_GROUPS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;transform&quot;</span><span class="p">]</span> <span class="c1"># Corresponds to the group name in store()</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="c1"># Configure the ZenDag pipeline</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Configuring ZenDag pipeline to generate </span><span class="si">{</span><span class="n">DVC_FILENAME</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+    <span class="n">configure_pipeline</span><span class="p">(</span>
+        <span class="n">store</span><span class="o">=</span><span class="n">store</span><span class="p">,</span>
+        <span class="n">stage_groups</span><span class="o">=</span><span class="n">STAGE_GROUPS</span><span class="p">,</span>
+        <span class="n">dvc_filename</span><span class="o">=</span><span class="n">DVC_FILENAME</span><span class="p">,</span>
+        <span class="n">run_script</span><span class="o">=</span><span class="s2">&quot;my_project.run_hydra_stage&quot;</span> <span class="c1"># Assumed script for running stages</span>
+    <span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;dvc.yaml generated successfully.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="step-4-run-the-pipeline-with-dvc">
+<h2>Step 4: Run the Pipeline with DVC<a class="headerlink" href="#step-4-run-the-pipeline-with-dvc" title="Link to this heading"></a></h2>
+<p>Now we execute the workflow:</p>
+<ol class="arabic">
+<li><p><strong>Run the configuration script:</strong>
+This generates <code class="docutils literal notranslate"><span class="pre">dvc.yaml</span></code> and composed configs in <code class="docutils literal notranslate"><span class="pre">artifacts/</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>configure.py
+</pre></div>
+</div>
+</li>
+<li><p><strong>Inspect <code class="docutils literal notranslate"><span class="pre">dvc.yaml</span></code>:</strong>
+Open the generated <code class="docutils literal notranslate"><span class="pre">dvc.yaml</span></code>. You should see something like:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">stages</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">transform/default_transform</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">cmd</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python -m my_project.run_hydra_stage -cd artifacts/transform -cn default_transform hydra.run.dir=&#39;artifacts/transform/default_transform&#39;</span>
+<span class="w">    </span><span class="nt">deps</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/raw/input.csv</span><span class="w"> </span>
+<span class="w">    </span><span class="nt">outs</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">artifacts/transform/default_transform/data/processed/output.csv</span><span class="w"> </span><span class="c1"># Path relative to artifacts root</span>
+<span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">artifacts/transform/default_transform.yaml</span>
+</pre></div>
+</div>
+<p>Notice how <code class="docutils literal notranslate"><span class="pre">deps</span></code> and <code class="docutils literal notranslate"><span class="pre">outs</span></code> match what we specified with <code class="docutils literal notranslate"><span class="pre">deps_path</span></code> and <code class="docutils literal notranslate"><span class="pre">outs_path</span></code>. The output path is automatically prefixed with the stage’s artifact directory.</p>
+</li>
+<li><p><strong>Run the DVC pipeline:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>dvc<span class="w"> </span>exp<span class="w"> </span>run
+</pre></div>
+</div>
+<p>DVC will execute the <code class="docutils literal notranslate"><span class="pre">cmd</span></code> defined for the <code class="docutils literal notranslate"><span class="pre">transform/default_transform</span></code> stage. You’ll see output from your Python script and MLflow.</p>
+</li>
+<li><p><strong>Check Outputs &amp; Logs:</strong></p>
+<ul class="simple">
+<li><p><strong>DVC Output:</strong> Look for <code class="docutils literal notranslate"><span class="pre">artifacts/transform/default_transform/data/processed/output.csv</span></code>. A corresponding <code class="docutils literal notranslate"><span class="pre">.dvc</span></code> file for this output will also be in that directory.</p></li>
+<li><p><strong>MLflow:</strong> If your MLflow server is running (or using local <code class="docutils literal notranslate"><span class="pre">mlruns</span></code>), you should find a new run with parameters like <code class="docutils literal notranslate"><span class="pre">scale_factor</span></code> and metrics like <code class="docutils literal notranslate"><span class="pre">num_rows_processed</span></code>.</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="data-versioning-in-action">
+<h2>Data Versioning in Action<a class="headerlink" href="#data-versioning-in-action" title="Link to this heading"></a></h2>
+<p>DVC tracks your data. Let’s see this:</p>
+<ol class="arabic">
+<li><p><strong>Modify Input Data:</strong>
+Open <code class="docutils literal notranslate"><span class="pre">data/raw/input.csv</span></code> and change some values.</p></li>
+<li><p><strong>Check DVC Status:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>dvc<span class="w"> </span>status
+</pre></div>
+</div>
+<p>DVC will report that <code class="docutils literal notranslate"><span class="pre">data/raw/input.csv</span></code> has changed.</p>
+</li>
+<li><p><strong>Re-run the Pipeline:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>dvc<span class="w"> </span>exp<span class="w"> </span>run
+<span class="c1"># Or, more specifically for reproduction:</span>
+<span class="c1"># dvc repro transform/default_transform</span>
+</pre></div>
+</div>
+<p>DVC detects the input change and re-executes the <code class="docutils literal notranslate"><span class="pre">transform/default_transform</span></code> stage.</p>
+</li>
+<li><p><strong>Commit Data and Pipeline Changes:</strong>
+DVC works with Git. To save this version of your data and pipeline:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>dvc.yaml<span class="w"> </span>dvc.lock<span class="w"> </span>
+<span class="c1"># You might also add the composed config: artifacts/transform/default_transform.yaml</span>
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Ran transform v1, updated input data&quot;</span>
+<span class="c1"># If you have a DVC remote configured:</span>
+<span class="c1"># dvc push</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="conclusion">
+<h2>Conclusion<a class="headerlink" href="#conclusion" title="Link to this heading"></a></h2>
+<p>You’ve successfully created and run your first ZenDag pipeline!</p>
+<ul class="simple">
+<li><p>You wrote a standard Python function.</p></li>
+<li><p>Used Hydra-Zen and ZenDag utilities (<code class="docutils literal notranslate"><span class="pre">deps_path</span></code>, <code class="docutils literal notranslate"><span class="pre">outs_path</span></code>) to define its configuration and link it to DVC.</p></li>
+<li><p>ZenDag’s <code class="docutils literal notranslate"><span class="pre">configure_pipeline</span></code> automatically generated the <code class="docutils literal notranslate"><span class="pre">dvc.yaml</span></code>.</p></li>
+<li><p>DVC executed the stage, and <code class="docutils literal notranslate"><span class="pre">&#64;mlflow_run</span></code> handled MLflow logging.</p></li>
+<li><p>DVC tracked changes to your input data, enabling reproducible runs.</p></li>
+</ul>
+<p>In the next notebook, we’ll explore how ZenDag helps build more complex, multi-stage pipelines (DAGs) automatically.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="ZenDag Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="dags_and_caching.html" class="btn btn-neutral float-right" title="Automatic DAGs &amp; DVC Caching with ZenDag" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Quentin Febvre.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

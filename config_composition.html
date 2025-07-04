@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Config Composition &amp; Reusable Components with ZenDag &mdash; ZenDag 0.1.5 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" type="text/css" />
+      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=59fadc99"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Sharing Data &amp; Models: DVC Versioning with Intake Catalogs (using fsspec)" href="sharing_with_intake.html" />
+    <link rel="prev" title="Automatic DAGs &amp; DVC Caching with ZenDag" href="dags_and_caching.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ZenDag
+          </a>
+              <div class="version">
+                0.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">ZenDag Quickstart: Your First Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dags_and_caching.html">Automatic DAGs &amp; DVC Caching with ZenDag</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Config Composition &amp; Reusable Components with ZenDag</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#example-a-reusable-file-logger">Example: A Reusable File Logger</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#defining-the-logger-configuration">Defining the Logger Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#using-the-logger-in-a-stage">Using the Logger in a Stage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-zendag-discovers-the-loggers-output">How ZenDag Discovers the Logger’s Output</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#running-the-stage">Running the Stage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#benefits">Benefits</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#conclusion">Conclusion</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sharing_with_intake.html">Sharing Data &amp; Models: DVC Versioning with Intake Catalogs (using fsspec)</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ZenDag</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Config Composition &amp; Reusable Components with ZenDag</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/config_composition.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="config-composition-reusable-components-with-zendag">
+<h1>Config Composition &amp; Reusable Components with ZenDag<a class="headerlink" href="#config-composition-reusable-components-with-zendag" title="Link to this heading"></a></h1>
+<p>Hydra is powerful for configuration management, especially its ability to compose configurations from smaller, reusable pieces. ZenDag leverages this: you can define common components (like loggers, trainers, data modules) as separate configurations and then include them in your main stage configs. ZenDag will still discover any <code class="docutils literal notranslate"><span class="pre">deps_path</span></code> or <code class="docutils literal notranslate"><span class="pre">outs_path</span></code> declarations within these composed parts.</p>
+<section id="example-a-reusable-file-logger">
+<h2>Example: A Reusable File Logger<a class="headerlink" href="#example-a-reusable-file-logger" title="Link to this heading"></a></h2>
+<p>Let’s define a configuration for a simple file logger. This logger will write to a file, and we want DVC to track this log file as an output of any stage that uses this logger.</p>
+<section id="defining-the-logger-configuration">
+<h3>Defining the Logger Configuration<a class="headerlink" href="#defining-the-logger-configuration" title="Link to this heading"></a></h3>
+<p>Create <code class="docutils literal notranslate"><span class="pre">configs/loggers_config.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># configs/loggers_config.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hydra_zen</span><span class="w"> </span><span class="kn">import</span> <span class="n">builds</span><span class="p">,</span> <span class="n">store</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zendag.config_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">outs_path</span> <span class="c1"># Logger&#39;s output file is a DVC output</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span> <span class="c1"># Standard logging</span>
+
+<span class="c1"># This is a simplified function. In reality, it would configure the logging system.</span>
+<span class="c1"># For ZenDag&#39;s dvc.yaml generation, we primarily care that it defines an output path.</span>
+<span class="c1"># The actual logging setup happens when the stage runs and Hydra instantiates this.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">setup_stage_file_logger</span><span class="p">(</span><span class="n">log_file_path_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">log_level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;INFO&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    (Mock) Sets up a file logger for a stage.</span>
+<span class="sd">    The actual configuration of the Python logging system would happen here</span>
+<span class="sd">    when Hydra instantiates this part of the config during stage execution.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">log_file_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">log_file_path_str</span><span class="p">)</span>
+    <span class="n">log_file_path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="c1"># Ensure directory exists</span>
+
+    <span class="c1"># Simulate logger setup for demonstration</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[LoggerSetup] Configuring file logger at: </span><span class="si">{</span><span class="n">log_file_path</span><span class="si">}</span><span class="s2"> with level </span><span class="si">{</span><span class="n">log_level</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># In a real scenario, you might return a configured logger object or just perform side effects.</span>
+    <span class="c1"># For ZenDag&#39;s config resolution, the important part is that `log_file_path_str` uses `outs_path`.</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;log_file&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">log_file_path</span><span class="p">),</span> <span class="s2">&quot;level&quot;</span><span class="p">:</span> <span class="n">log_level</span><span class="p">}</span>
+
+<span class="c1"># Hydra-Zen config for our file logger</span>
+<span class="n">FileLoggerConfig</span> <span class="o">=</span> <span class="n">builds</span><span class="p">(</span>
+    <span class="n">setup_stage_file_logger</span><span class="p">,</span>
+    <span class="n">populate_full_signature</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="c1"># The log file path is an output of the stage using this logger.</span>
+    <span class="c1"># It will be relative to the stage&#39;s output directory.</span>
+    <span class="n">log_file_path_str</span><span class="o">=</span><span class="n">outs_path</span><span class="p">(</span><span class="s2">&quot;logs/stage_execution.log&quot;</span><span class="p">),</span>
+    <span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;DEBUG&quot;</span> <span class="c1"># Default log level for this config</span>
+<span class="p">)</span>
+
+<span class="c1"># Register it in a &#39;logger&#39; group</span>
+<span class="n">store</span><span class="p">(</span><span class="n">FileLoggerConfig</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s2">&quot;logger&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;default_file_logger&quot;</span><span class="p">)</span>
+
+<span class="c1"># Another variant</span>
+<span class="n">VerboseFileLoggerConfig</span> <span class="o">=</span> <span class="n">builds</span><span class="p">(</span>
+    <span class="n">setup_stage_file_logger</span><span class="p">,</span>
+    <span class="n">populate_full_signature</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">log_file_path_str</span><span class="o">=</span><span class="n">outs_path</span><span class="p">(</span><span class="s2">&quot;logs/verbose_stage_execution.log&quot;</span><span class="p">),</span>
+    <span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;NOTSET&quot;</span> <span class="c1"># Using NOTSET which is more verbose than DEBUG for standard logging</span>
+<span class="p">)</span>
+<span class="n">store</span><span class="p">(</span><span class="n">VerboseFileLoggerConfig</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s2">&quot;logger&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;verbose_file_logger&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="using-the-logger-in-a-stage">
+<h3>Using the Logger in a Stage<a class="headerlink" href="#using-the-logger-in-a-stage" title="Link to this heading"></a></h3>
+<p>Let’s modify the <code class="docutils literal notranslate"><span class="pre">TransformConfig</span></code> from our <a class="reference internal" href="quickstart.html"><span class="std std-doc">Quickstart Notebook</span></a> to include this logger using Hydra’s <code class="docutils literal notranslate"><span class="pre">hydra_defaults</span></code>.</p>
+<p>Modify <code class="docutils literal notranslate"><span class="pre">configs/transform_config.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># configs/transform_config.py (modified)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hydra_zen</span><span class="w"> </span><span class="kn">import</span> <span class="n">builds</span><span class="p">,</span> <span class="n">store</span><span class="p">,</span> <span class="n">MISSING</span> <span class="c1"># Import MISSING</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zendag.config_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">deps_path</span><span class="p">,</span> <span class="n">outs_path</span>
+<span class="c1"># Assume transform_data is in my_project.stages.simple_transform</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">my_project.stages.simple_transform</span><span class="w"> </span><span class="kn">import</span> <span class="n">transform_data</span> <span class="c1"># Or your actual import</span>
+
+<span class="c1"># Option 1: Stage function is unaware of the logger (Hydra instantiates it)</span>
+<span class="n">TransformConfigWithLogger</span> <span class="o">=</span> <span class="n">builds</span><span class="p">(</span>
+    <span class="n">transform_data</span><span class="p">,</span> <span class="c1"># transform_data itself doesn&#39;t take a logger argument here</span>
+    <span class="n">populate_full_signature</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">input_csv_path</span><span class="o">=</span><span class="n">deps_path</span><span class="p">(</span><span class="s2">&quot;data/raw/input.csv&quot;</span><span class="p">),</span>
+    <span class="n">output_csv_path</span><span class="o">=</span><span class="n">outs_path</span><span class="p">(</span><span class="s2">&quot;data/processed/output_with_logging.csv&quot;</span><span class="p">),</span>
+    <span class="n">scale_factor</span><span class="o">=</span><span class="mf">2.5</span><span class="p">,</span>
+    <span class="c1"># --- Hydra Defaults for Composition ---</span>
+    <span class="n">hydra_defaults</span><span class="o">=</span><span class="p">[</span>
+        <span class="s2">&quot;_self_&quot;</span><span class="p">,</span>  <span class="c1"># Always include this first</span>
+        <span class="p">{</span><span class="s2">&quot;logger&quot;</span><span class="p">:</span> <span class="s2">&quot;default_file_logger&quot;</span><span class="p">}</span> <span class="c1"># Load the &#39;default_file_logger&#39; from the &#39;logger&#39; group</span>
+        <span class="c1"># To use the other logger: {&quot;logger&quot;: &quot;verbose_file_logger&quot;}</span>
+        <span class="c1"># The key &#39;logger&#39; here will create a &#39;logger&#39; node in the final composed config.</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+<span class="c1"># Ensure the original default_transform (from quickstart) is also available if needed for other examples</span>
+<span class="c1"># or update it to also use a logger if that&#39;s the new baseline.</span>
+<span class="c1"># For this example, we create a new named config.</span>
+<span class="n">store</span><span class="p">(</span><span class="n">TransformConfigWithLogger</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s2">&quot;transform&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;logged_transform&quot;</span><span class="p">)</span>
+
+<span class="c1"># If you had an original default_transform:</span>
+<span class="c1"># OriginalTransformConfig = builds(</span>
+<span class="c1">#     transform_data,</span>
+<span class="c1">#     populate_full_signature=True,</span>
+<span class="c1">#     input_csv_path=deps_path(&quot;data/raw/input.csv&quot;),</span>
+<span class="c1">#     output_csv_path=outs_path(&quot;data/processed/output.csv&quot;),</span>
+<span class="c1">#     scale_factor=1.5</span>
+<span class="c1"># )</span>
+<span class="c1"># store(OriginalTransformConfig, group=&quot;transform&quot;, name=&quot;default_transform&quot;)</span>
+
+</pre></div>
+</div>
+<p>For simplicity, we’ll focus on the case where the logger is instantiated by Hydra, and the stage function <code class="docutils literal notranslate"><span class="pre">transform_data</span></code> doesn’t need a <code class="docutils literal notranslate"><span class="pre">logger</span></code> argument directly. The <code class="docutils literal notranslate"><span class="pre">setup_stage_file_logger</span></code> function would typically configure a global/module logger that <code class="docutils literal notranslate"><span class="pre">transform_data</span></code> then uses via <code class="docutils literal notranslate"><span class="pre">logging.getLogger(__name__)</span></code>.</p>
+</section>
+<section id="how-zendag-discovers-the-loggers-output">
+<h3>How ZenDag Discovers the Logger’s Output<a class="headerlink" href="#how-zendag-discovers-the-loggers-output" title="Link to this heading"></a></h3>
+<ol class="arabic">
+<li><p><strong>Update <code class="docutils literal notranslate"><span class="pre">configure.py</span></code></strong>:</p>
+<ul class="simple">
+<li><p>Import <code class="docutils literal notranslate"><span class="pre">configs.loggers_config</span></code>.</p></li>
+<li><p>Ensure <code class="docutils literal notranslate"><span class="pre">transform</span></code> (and specifically <code class="docutils literal notranslate"><span class="pre">logged_transform</span></code>) is processed.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># configure.py (snippet)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">configs.transform_config</span> <span class="c1"># Has logged_transform</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">configs.loggers_config</span>   <span class="c1"># Defines logger configs</span>
+<span class="c1"># ...</span>
+<span class="c1"># If you are also running quickstart&#39;s default_transform, keep its dummy input logic</span>
+<span class="c1"># Path(&quot;data/raw/input.csv&quot;).parent.mkdir(parents=True, exist_ok=True) </span>
+<span class="c1"># pd.DataFrame({&#39;id&#39;: [1,2], &#39;value&#39;: [10,20]}).to_csv(Path(&quot;data/raw/input.csv&quot;), index=False)</span>
+<span class="c1"># os.system(f&quot;dvc add data/raw/input.csv&quot;)</span>
+
+<span class="n">STAGE_GROUPS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;transform&quot;</span><span class="p">]</span> <span class="c1"># This will pick up all configs in the &#39;transform&#39; group</span>
+<span class="c1"># ...</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Run Configuration:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>configure.py
+</pre></div>
+</div>
+</li>
+<li><p><strong>Inspect <code class="docutils literal notranslate"><span class="pre">dvc.yaml</span></code>:</strong>
+Look at the entry for <code class="docutils literal notranslate"><span class="pre">transform/logged_transform</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">stages</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">transform/logged_transform</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">cmd</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python -m my_project.run_hydra_stage -cd artifacts/transform -cn logged_transform hydra.run.dir=&#39;artifacts/transform/logged_transform&#39;</span>
+<span class="w">    </span><span class="nt">deps</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/raw/input.csv</span>
+<span class="w">    </span><span class="nt">outs</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># Output from transform_data itself</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">artifacts/transform/logged_transform/data/processed/output_with_logging.csv</span>
+<span class="w">    </span><span class="c1"># Output from the composed logger!</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">artifacts/transform/logged_transform/logs/stage_execution.log</span><span class="w"> </span>
+<span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">artifacts/transform/logged_transform.yaml</span>
+</pre></div>
+</div>
+<p>ZenDag’s <code class="docutils literal notranslate"><span class="pre">configure_pipeline</span></code> calls <code class="docutils literal notranslate"><span class="pre">OmegaConf.resolve(cfg)</span></code> on the <em>fully composed</em> configuration for <code class="docutils literal notranslate"><span class="pre">transform/logged_transform</span></code>. This composed config includes the <code class="docutils literal notranslate"><span class="pre">logger</span></code> node (because of <code class="docutils literal notranslate"><span class="pre">hydra_defaults</span></code>), which itself contains <code class="docutils literal notranslate"><span class="pre">log_file_path_str=outs_path(&quot;logs/stage_execution.log&quot;)</span></code>. The <code class="docutils literal notranslate"><span class="pre">outs:</span></code> resolver is triggered, and the log file path is added to the <code class="docutils literal notranslate"><span class="pre">outs</span></code> for the <code class="docutils literal notranslate"><span class="pre">transform/logged_transform</span></code> DVC stage.</p>
+</li>
+</ol>
+</section>
+<section id="running-the-stage">
+<h3>Running the Stage<a class="headerlink" href="#running-the-stage" title="Link to this heading"></a></h3>
+<p>When you run <code class="docutils literal notranslate"><span class="pre">dvc</span> <span class="pre">exp</span> <span class="pre">run</span> <span class="pre">transform/logged_transform</span></code> (or <code class="docutils literal notranslate"><span class="pre">dvc</span> <span class="pre">exp</span> <span class="pre">run</span></code> if it’s the only changed part):</p>
+<ul class="simple">
+<li><p>Hydra will instantiate the <code class="docutils literal notranslate"><span class="pre">logger</span></code> part of its config, calling <code class="docutils literal notranslate"><span class="pre">setup_stage_file_logger</span></code>.</p></li>
+<li><p>The (mock) <code class="docutils literal notranslate"><span class="pre">setup_stage_file_logger</span></code> will print its message. Because its <code class="docutils literal notranslate"><span class="pre">log_file_path_str</span></code> used <code class="docutils literal notranslate"><span class="pre">outs_path</span></code>, DVC now tracks this log file.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">transform_data</span></code> function will run. Its own <code class="docutils literal notranslate"><span class="pre">log</span> <span class="pre">=</span> <span class="pre">logging.getLogger(__name__)</span></code> statements would go to the logger configured by <code class="docutils literal notranslate"><span class="pre">setup_stage_file_logger</span></code> if it configured the root logger or a relevant parent.</p></li>
+<li><p>The file <code class="docutils literal notranslate"><span class="pre">artifacts/transform/logged_transform/logs/stage_execution.log</span></code> will be created (even if it’s just empty or with minimal content in this mock, DVC tracks its existence as an output).</p></li>
+</ul>
+</section>
+<section id="benefits">
+<h3>Benefits<a class="headerlink" href="#benefits" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Reusability:</strong> Define logger (or trainer, optimizer, etc.) configs once, use them in many stages.</p></li>
+<li><p><strong>Separation of Concerns:</strong> Stage logic doesn’t need to be cluttered with detailed setup for common components.</p></li>
+<li><p><strong>Dynamic Outputs:</strong> ZenDag automatically picks up DVC outputs (<code class="docutils literal notranslate"><span class="pre">outs_path</span></code>) declared deep within composed configuration structures.</p></li>
+<li><p><strong>Flexibility:</strong> Easily swap out components by changing the <code class="docutils literal notranslate"><span class="pre">hydra_defaults</span></code> (e.g., switch to <code class="docutils literal notranslate"><span class="pre">verbose_file_logger</span></code>).</p></li>
+</ul>
+</section>
+</section>
+<section id="conclusion">
+<h2>Conclusion<a class="headerlink" href="#conclusion" title="Link to this heading"></a></h2>
+<p>Hydra’s composition, combined with ZenDag’s <code class="docutils literal notranslate"><span class="pre">deps_path</span></code> and <code class="docutils literal notranslate"><span class="pre">outs_path</span></code> discovery, allows for building sophisticated and modular MLOps pipelines where even common components can have their outputs tracked by DVC without manual duplication in the <code class="docutils literal notranslate"><span class="pre">dvc.yaml</span></code>. This leads to cleaner, more maintainable, and highly reproducible workflows.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="dags_and_caching.html" class="btn btn-neutral float-left" title="Automatic DAGs &amp; DVC Caching with ZenDag" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="sharing_with_intake.html" class="btn btn-neutral float-right" title="Sharing Data &amp; Models: DVC Versioning with Intake Catalogs (using fsspec)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Quentin Febvre.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

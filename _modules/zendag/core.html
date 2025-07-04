@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>zendag.core &mdash; ZenDag 0.1.5 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=59fadc99"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ZenDag
+          </a>
+              <div class="version">
+                0.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">ZenDag Quickstart: Your First Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dags_and_caching.html">Automatic DAGs &amp; DVC Caching with ZenDag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config_composition.html">Config Composition &amp; Reusable Components with ZenDag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../sharing_with_intake.html">Sharing Data &amp; Models: DVC Versioning with Intake Catalogs (using fsspec)</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ZenDag</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">zendag.core</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for zendag.core</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">hydra</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hydra.core.global_hydra</span><span class="w"> </span><span class="kn">import</span> <span class="n">GlobalHydra</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">hydra_zen</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">omegaconf</span><span class="w"> </span><span class="kn">import</span> <span class="n">OmegaConf</span>
+
+<span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">ARTIFACTS_ROOT</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ARTIFACTS_DIR&quot;</span><span class="p">,</span> <span class="s2">&quot;workbench&quot;</span><span class="p">)</span>  <span class="c1"># Default to &quot;workbench&quot;</span>
+
+
+<span class="c1"># Default stage dir function, can be overridden</span>
+<div class="viewcode-block" id="default_stage_dir_fn">
+<a class="viewcode-back" href="../../zenflow.core.html#zendag.core.default_stage_dir_fn">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">default_stage_dir_fn</span><span class="p">(</span><span class="n">stage</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates the default path for a stage&#39;s output directory.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">stage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ARTIFACTS_ROOT</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ARTIFACTS_ROOT</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">stage</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+
+<span class="c1"># Default config dir function, can be overridden</span>
+<div class="viewcode-block" id="default_configs_dir_fn">
+<a class="viewcode-back" href="../../zenflow.core.html#zendag.core.default_configs_dir_fn">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">default_configs_dir_fn</span><span class="p">(</span><span class="n">stage</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates the default path for storing composed stage configs.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">stage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ARTIFACTS_ROOT</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ARTIFACTS_ROOT</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">stage</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="configure_pipeline">
+<a class="viewcode-back" href="../../zenflow.core.html#zendag.core.configure_pipeline">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">configure_pipeline</span><span class="p">(</span>
+    <span class="n">store</span><span class="p">:</span> <span class="n">hydra_zen</span><span class="o">.</span><span class="n">ZenStore</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">stage_groups</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">stage_dir_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">default_stage_dir_fn</span><span class="p">,</span>
+    <span class="n">configs_dir_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">default_configs_dir_fn</span><span class="p">,</span>
+    <span class="n">dvc_filename</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;dvc.yaml&quot;</span><span class="p">,</span>
+    <span class="n">run_script</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;zendag.run&quot;</span><span class="p">,</span>  <span class="c1"># Changed from xp_workflow.run</span>
+    <span class="n">config_root</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># Optional root for hydra initialization</span>
+    <span class="n">manual_dvc</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">wdir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">dvc_stage_name_fn</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">dry</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Configures the DVC pipeline based on Hydra-Zen stored configurations.</span>
+
+<span class="sd">    Generates composed Hydra configs for each stage instance and creates a</span>
+<span class="sd">    dvc.yaml file defining the pipeline stages, dependencies, and outputs.</span>
+
+<span class="sd">    Dependencies and outputs are automatically discovered during Hydra config</span>
+<span class="sd">    resolution via specially registered resolvers for &#39;deps&#39; and &#39;outs&#39;.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        store: The Hydra-Zen store containing the configured stage components.</span>
+<span class="sd">        stage_groups: A list of stage group names (e.g., &#39;training&#39;, &#39;data_prep&#39;)</span>
+<span class="sd">                      present in the store. Stages within these groups will be</span>
+<span class="sd">                      processed.</span>
+<span class="sd">        stage_dir_fn: A function `fn(stage_name, config_name) -&gt; str` that returns</span>
+<span class="sd">                      the base output directory path for a given stage instance.</span>
+<span class="sd">                      Defaults to `workbench/&lt;stage_name&gt;/&lt;config_name&gt;`.</span>
+<span class="sd">        configs_dir_fn: A function `fn(stage_name) -&gt; str` that returns the directory</span>
+<span class="sd">                        path where composed Hydra configs for a stage group will be</span>
+<span class="sd">                        stored. Defaults to `workbench/&lt;stage_name&gt;`.</span>
+<span class="sd">        dvc_filename: The name of the DVC pipeline file to generate. Defaults to &#39;dvc.yaml&#39;.</span>
+<span class="sd">        run_script: The Python module path to execute for running a stage (e.g., &#39;my_project.run&#39;).</span>
+<span class="sd">                    Defaults to &#39;zendag.run&#39;.</span>
+<span class="sd">        config_root: The path relative to which Hydra should initialize (defaults to cwd).</span>
+<span class="sd">                     Needed if configs are stored outside the cwd.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">dvc_stages</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">all_deps</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">all_outs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">stage_config_paths</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">if</span> <span class="n">store</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">store</span> <span class="o">=</span> <span class="n">hydra_zen</span><span class="o">.</span><span class="n">store</span>
+
+    <span class="k">if</span> <span class="n">dvc_stage_name_fn</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dvc_stage_name_fn</span> <span class="o">=</span> <span class="p">(</span><span class="k">lambda</span> <span class="n">g</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">g</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">stage_groups</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">(</span><span class="k">lambda</span> <span class="n">_</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">stage_groups</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">stage_groups</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">wdir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">wdir</span> <span class="o">=</span> <span class="n">stage_dir_fn</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">Path</span><span class="p">(</span><span class="n">wdir</span><span class="p">)</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># Ensure the working directory exists</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">wdir</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;projroot&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">symlink</span><span class="p">(</span>
+            <span class="n">Path</span><span class="p">(</span><span class="o">*</span><span class="p">([</span><span class="s2">&quot;..&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">wdir</span><span class="p">)</span><span class="o">.</span><span class="n">parts</span><span class="p">))),</span> <span class="n">Path</span><span class="p">(</span><span class="n">wdir</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;projroot&quot;</span><span class="p">,</span> <span class="n">target_is_directory</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>  <span class="c1"># Link projroot to working directory</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">wdir_p</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">lk</span><span class="o">=</span><span class="s2">&quot;projroot&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">w</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">wdir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">p</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="o">.</span><span class="n">absolute</span><span class="p">()</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">wdir</span><span class="p">)</span><span class="o">.</span><span class="n">absolute</span><span class="p">()))</span>
+        <span class="k">return</span> <span class="n">lk</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+
+    <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Initializing Hydra (version_base=1.3) for configuration composition.&quot;</span><span class="p">)</span>
+    <span class="c1"># Initialize Hydra once if needed, respecting config_root</span>
+
+    <span class="k">if</span> <span class="n">GlobalHydra</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span><span class="o">.</span><span class="n">is_initialized</span><span class="p">():</span>
+        <span class="n">GlobalHydra</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">config_root</span><span class="p">:</span>
+        <span class="n">hydra</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">version_base</span><span class="o">=</span><span class="s2">&quot;1.3&quot;</span><span class="p">,</span> <span class="n">config_path</span><span class="o">=</span><span class="n">config_root</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">hydra</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">version_base</span><span class="o">=</span><span class="s2">&quot;1.3&quot;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">store</span><span class="o">.</span><span class="n">add_to_hydra_store</span><span class="p">(</span><span class="n">overwrite_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;  Successfully added store configurations to hydra&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">_log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;  Failed add store configurations to hydra&#39;. Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">raise</span> <span class="n">e</span>
+    <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing stage groups: </span><span class="si">{</span><span class="n">stage_groups</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">stage_groups</span><span class="p">:</span>
+        <span class="n">cfg_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">configs_dir_fn</span><span class="p">(</span><span class="n">stage</span><span class="p">))</span>
+        <span class="n">cfg_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Ensured configuration directory exists: </span><span class="si">{</span><span class="n">cfg_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">stage_items</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">store</span><span class="p">[</span><span class="n">stage</span><span class="p">])</span>  <span class="c1"># Get all items (configs) for this stage group</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">stage_items</span><span class="p">:</span>
+            <span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No configurations found in store for stage group: &#39;</span><span class="si">{</span><span class="n">stage</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing stage group &#39;</span><span class="si">{</span><span class="n">stage</span><span class="si">}</span><span class="s2">&#39; with </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">stage_items</span><span class="p">)</span><span class="si">}</span><span class="s2"> configuration(s)...&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">stage_items</span><span class="p">:</span>
+            <span class="n">stage_key</span> <span class="o">=</span> <span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+            <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Processing configuration: &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+
+            <span class="c1"># 1. Compose the configuration</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">stage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">cfg</span> <span class="o">=</span> <span class="n">hydra</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">cfg</span> <span class="o">=</span> <span class="n">hydra</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">overrides</span><span class="o">=</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;+</span><span class="si">{</span><span class="n">stage</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">])</span>
+                    <span class="n">cfg</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">stage</span><span class="p">)</span>
+                <span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Successfully composed configuration for &#39;</span><span class="si">{</span><span class="n">stage</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">_log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;  Failed to compose configuration for &#39;</span><span class="si">{</span><span class="n">stage</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;. Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># 3. Resolve config to discover deps/outs via side-effects</span>
+            <span class="n">current_deps</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">current_outs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="c1"># IMPORTANT: Register resolvers *before* resolve call</span>
+            <span class="c1"># These resolvers have side-effects (appending to lists)</span>
+
+            <span class="n">hydra_run_dir</span> <span class="o">=</span> <span class="n">wdir_p</span><span class="p">(</span><span class="n">stage_dir_fn</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span>
+            <span class="n">OmegaConf</span><span class="o">.</span><span class="n">register_new_resolver</span><span class="p">(</span>
+                <span class="s2">&quot;outs&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">k</span><span class="p">:</span> <span class="n">current_outs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hydra_run_dir</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">k</span><span class="p">)</span> <span class="ow">or</span> <span class="n">k</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+
+            <span class="n">OmegaConf</span><span class="o">.</span><span class="n">register_new_resolver</span><span class="p">(</span>
+                <span class="s2">&quot;deps&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">k</span><span class="p">,</span> <span class="n">w</span><span class="p">:</span> <span class="n">current_deps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">wdir_p</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">w</span><span class="p">))</span> <span class="ow">or</span> <span class="n">wdir_p</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">w</span><span class="p">),</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+            <span class="c1"># Hydra resolver needs the runtime context for the *specific* stage instance</span>
+
+            <span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Resolving configuration for &#39;</span><span class="si">{</span><span class="n">stage</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; to discover dependencies and outputs...&quot;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">OmegaConf</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+                <span class="c1"># Make unique and sort for consistency</span>
+                <span class="n">unique_deps</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">current_deps</span><span class="p">)))</span>
+                <span class="n">unique_outs</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">current_outs</span><span class="p">)))</span>
+                <span class="n">all_deps</span><span class="p">[</span><span class="n">stage_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">unique_deps</span>
+                <span class="n">all_outs</span><span class="p">[</span><span class="n">stage_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">unique_outs</span>
+                <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    Discovered Deps: </span><span class="si">{</span><span class="n">unique_deps</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    Discovered Outs: </span><span class="si">{</span><span class="n">unique_outs</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">_log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;  Failed during config resolution for &#39;</span><span class="si">{</span><span class="n">stage</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;. Check interpolations (esp. deps/outs). Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="c1"># Store empty lists to avoid crashing later, but log error</span>
+                <span class="n">all_deps</span><span class="p">[</span><span class="n">stage_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">all_outs</span><span class="p">[</span><span class="n">stage_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="c1"># 2. Write the composed config (for DVC params tracking)</span>
+            <span class="n">composed_config_path</span> <span class="o">=</span> <span class="n">cfg_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">.yaml&quot;</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">composed_config_path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">hydra_zen</span><span class="o">.</span><span class="n">to_yaml</span><span class="p">(</span><span class="n">cfg</span><span class="p">))</span>
+                <span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Wrote composed configuration to: </span><span class="si">{</span><span class="n">composed_config_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">_log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;  Failed to write composed configuration to </span><span class="si">{</span><span class="n">composed_config_path</span><span class="si">}</span><span class="s2">. Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># 4. Define DVC stage entry</span>
+            <span class="n">dvc_stage_name</span> <span class="o">=</span> <span class="n">dvc_stage_name_fn</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+            <span class="n">stage_config_paths</span><span class="p">[</span><span class="n">dvc_stage_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">composed_config_path</span>
+            <span class="c1"># Ensure the output directory path uses the function, not hardcoded &#39;workbench&#39;</span>
+            <span class="n">dvc_stages</span><span class="p">[</span><span class="n">dvc_stage_name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="n">cmd</span><span class="o">=</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;python -m </span><span class="si">{</span><span class="n">run_script</span><span class="si">}</span><span class="s2"> &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;-cd </span><span class="si">{</span><span class="n">wdir_p</span><span class="p">(</span><span class="n">configs_dir_fn</span><span class="p">(</span><span class="n">stage</span><span class="p">))</span><span class="si">}</span><span class="s2"> -cn </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> &quot;</span>
+                    <span class="s2">&quot;+zendag=base &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;hydra.run.dir=&#39;</span><span class="si">{</span><span class="n">hydra_run_dir</span><span class="si">}</span><span class="s2">&#39;&quot;</span>  <span class="c1"># Use quotes for safety</span>
+                <span class="p">),</span>
+                <span class="o">**</span><span class="p">(</span><span class="nb">dict</span><span class="p">()</span> <span class="k">if</span> <span class="n">wdir</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">dict</span><span class="p">(</span><span class="n">wdir</span><span class="o">=</span><span class="n">wdir</span><span class="p">)),</span>
+                <span class="n">deps</span><span class="o">=</span><span class="n">all_deps</span><span class="p">[</span><span class="n">stage_key</span><span class="p">],</span>
+                <span class="n">outs</span><span class="o">=</span><span class="n">all_outs</span><span class="p">[</span><span class="n">stage_key</span><span class="p">],</span>
+                <span class="n">params</span><span class="o">=</span><span class="p">[{</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">wdir_p</span><span class="p">(</span><span class="n">composed_config_path</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}],</span>  <span class="c1"># Use as_posix for consistency</span>
+            <span class="p">)</span>
+            <span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Defined DVC stage &#39;</span><span class="si">{</span><span class="n">dvc_stage_name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># 5. Write dvc.yaml</span>
+    <span class="n">dvc_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">dvc_filename</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Use OmegaConf to dump YAML for consistency and potentially better handling</span>
+        <span class="n">dvc_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;stages&quot;</span><span class="p">:</span> <span class="n">dvc_stages</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">manual_dvc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">OmegaConf</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">dvc_data</span><span class="p">,</span> <span class="n">manual_dvc</span><span class="p">)</span>
+
+        <span class="c1"># Convert DictConfig back to primitive types suitable for pyyaml dump if needed</span>
+        <span class="c1"># or use OmegaConf.save if hydra_zen.to_yaml doesn&#39;t handle it well (it should)</span>
+        <span class="n">dvc_file</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">hydra_zen</span><span class="o">.</span><span class="n">to_yaml</span><span class="p">(</span><span class="n">dvc_data</span><span class="p">))</span>  <span class="c1"># hydra-zen&#39;s yaml dump is generally good</span>
+        <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully wrote DVC pipeline configuration to: </span><span class="si">{</span><span class="n">dvc_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">_log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to write DVC pipeline file </span><span class="si">{</span><span class="n">dvc_file</span><span class="si">}</span><span class="s2">. Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">GlobalHydra</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">stage_config_paths</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Quentin Febvre.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

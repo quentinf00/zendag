@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Automatic DAGs &amp; DVC Caching with ZenDag &mdash; ZenDag 0.1.5 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" type="text/css" />
+      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=59fadc99"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Config Composition &amp; Reusable Components with ZenDag" href="config_composition.html" />
+    <link rel="prev" title="ZenDag Quickstart: Your First Pipeline" href="quickstart.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ZenDag
+          </a>
+              <div class="version">
+                0.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">ZenDag Quickstart: Your First Pipeline</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Automatic DAGs &amp; DVC Caching with ZenDag</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#building-a-multi-stage-pipeline">Building a Multi-Stage Pipeline</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#stage-1-generate-data">Stage 1: Generate Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#stage-2-process-data">Stage 2: Process Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#stage-3-summarize-data">Stage 3: Summarize Data</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#updated-configure-py">Updated <code class="docutils literal notranslate"><span class="pre">configure.py</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-configure-and-inspecting-the-dag">Running <code class="docutils literal notranslate"><span class="pre">configure</span></code> and Inspecting the DAG</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-the-pipeline-dvc-caching">Running the Pipeline &amp; DVC Caching</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#conclusion">Conclusion</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="config_composition.html">Config Composition &amp; Reusable Components with ZenDag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sharing_with_intake.html">Sharing Data &amp; Models: DVC Versioning with Intake Catalogs (using fsspec)</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ZenDag</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Automatic DAGs &amp; DVC Caching with ZenDag</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/dags_and_caching.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="automatic-dags-dvc-caching-with-zendag">
+<h1>Automatic DAGs &amp; DVC Caching with ZenDag<a class="headerlink" href="#automatic-dags-dvc-caching-with-zendag" title="Link to this heading"></a></h1>
+<p>In the <a class="reference internal" href="quickstart.html"><span class="std std-doc">Quickstart Notebook</span></a>, we saw how to create a single-stage pipeline. ZenDag truly shines when building multi-stage pipelines, as its <code class="docutils literal notranslate"><span class="pre">deps_path</span></code> and <code class="docutils literal notranslate"><span class="pre">outs_path</span></code> utilities automatically define the Directed Acyclic Graph (DAG) for DVC. We’ll also see DVC’s powerful caching mechanism in action.</p>
+<section id="building-a-multi-stage-pipeline">
+<h2>Building a Multi-Stage Pipeline<a class="headerlink" href="#building-a-multi-stage-pipeline" title="Link to this heading"></a></h2>
+<p>Let’s create a three-stage pipeline:</p>
+<ol class="arabic simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">generate_data</span></code></strong>: Creates some raw data.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">process_data</span></code></strong>: Takes raw data, processes it.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">summarize_data</span></code></strong>: Takes processed data, creates a summary.</p></li>
+</ol>
+<section id="stage-1-generate-data">
+<h3>Stage 1: Generate Data<a class="headerlink" href="#stage-1-generate-data" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># src/my_project/stages/generate_data_stage.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">mlflow</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zendag.mlflow_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">mlflow_run</span>
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="nd">@mlflow_run</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_data</span><span class="p">(</span><span class="n">output_csv_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">num_rows</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">base_value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">):</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generating </span><span class="si">{</span><span class="n">num_rows</span><span class="si">}</span><span class="s2"> rows of data to </span><span class="si">{</span><span class="n">output_csv_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+        <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_rows</span><span class="p">),</span>
+        <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="n">i</span> <span class="o">%</span> <span class="mi">10</span><span class="p">)</span> <span class="o">*</span> <span class="n">base_value</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_rows</span><span class="p">)]</span>
+    <span class="p">})</span>
+    <span class="n">Path</span><span class="p">(</span><span class="n">output_csv_path</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">output_csv_path</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">log_param</span><span class="p">(</span><span class="s2">&quot;num_rows_generated&quot;</span><span class="p">,</span> <span class="n">num_rows</span><span class="p">)</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">log_param</span><span class="p">(</span><span class="s2">&quot;base_value&quot;</span><span class="p">,</span> <span class="n">base_value</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Data generation complete.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;generated_file&quot;</span><span class="p">:</span> <span class="n">output_csv_path</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>Config (<code class="docutils literal notranslate"><span class="pre">configs/generate_data_config.py</span></code>):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># configs/generate_data_config.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hydra_zen</span><span class="w"> </span><span class="kn">import</span> <span class="n">builds</span><span class="p">,</span> <span class="n">store</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zendag.config_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">outs_path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">my_project.stages.generate_data_stage</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_data</span>
+
+<span class="n">GenerateDataConfig</span> <span class="o">=</span> <span class="n">builds</span><span class="p">(</span>
+    <span class="n">generate_data</span><span class="p">,</span>
+    <span class="n">output_csv_path</span><span class="o">=</span><span class="n">outs_path</span><span class="p">(</span><span class="s2">&quot;generated_data.csv&quot;</span><span class="p">),</span> <span class="c1"># This is an output of this stage</span>
+    <span class="n">num_rows</span><span class="o">=</span><span class="mi">50</span>
+<span class="p">)</span>
+<span class="n">store</span><span class="p">(</span><span class="n">GenerateDataConfig</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s2">&quot;generate_data&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;default_gen&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="stage-2-process-data">
+<h3>Stage 2: Process Data<a class="headerlink" href="#stage-2-process-data" title="Link to this heading"></a></h3>
+<p>This stage will take the output of <code class="docutils literal notranslate"><span class="pre">generate_data</span></code> as its input.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># src/my_project/stages/process_data_stage.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">mlflow</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zendag.mlflow_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">mlflow_run</span>
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="nd">@mlflow_run</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">process_data</span><span class="p">(</span><span class="n">input_csv_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">processed_output_csv_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">scale_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">):</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing data from </span><span class="si">{</span><span class="n">input_csv_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="c1"># Ensure dummy input exists if generate_data wasn&#39;t run or its output isn&#39;t available</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="n">input_csv_path</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input </span><span class="si">{</span><span class="n">input_csv_path</span><span class="si">}</span><span class="s2"> not found for process_data. Creating dummy for example.&quot;</span><span class="p">)</span>
+        <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">100</span><span class="p">,</span><span class="mi">10</span><span class="p">)})</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">input_csv_path</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">input_csv_path</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;processed_value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">scale_factor</span>
+    <span class="n">Path</span><span class="p">(</span><span class="n">processed_output_csv_path</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">processed_output_csv_path</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">log_param</span><span class="p">(</span><span class="s2">&quot;processing_scale_factor&quot;</span><span class="p">,</span> <span class="n">scale_factor</span><span class="p">)</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">log_metric</span><span class="p">(</span><span class="s2">&quot;processed_rows&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processed data saved to </span><span class="si">{</span><span class="n">processed_output_csv_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;processed_file&quot;</span><span class="p">:</span> <span class="n">processed_output_csv_path</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>Config (<code class="docutils literal notranslate"><span class="pre">configs/process_data_config.py</span></code>):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># configs/process_data_config.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hydra_zen</span><span class="w"> </span><span class="kn">import</span> <span class="n">builds</span><span class="p">,</span> <span class="n">store</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zendag.config_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">deps_path</span><span class="p">,</span> <span class="n">outs_path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">my_project.stages.process_data_stage</span><span class="w"> </span><span class="kn">import</span> <span class="n">process_data</span>
+
+<span class="n">ProcessDataConfig</span> <span class="o">=</span> <span class="n">builds</span><span class="p">(</span>
+    <span class="n">process_data</span><span class="p">,</span>
+    <span class="n">populate_full_signature</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="c1"># Crucial: input_csv_path depends on the output of the &#39;generate_data/default_gen&#39; stage</span>
+    <span class="n">input_csv_path</span><span class="o">=</span><span class="n">deps_path</span><span class="p">(</span> <span class="s2">&quot;generated_data.csv&quot;</span><span class="p">,</span> <span class="s2">&quot;generate_data&quot;</span><span class="p">,</span><span class="s2">&quot;default_gen&quot;</span><span class="p">,),</span>
+    <span class="n">processed_output_csv_path</span><span class="o">=</span><span class="n">outs_path</span><span class="p">(</span><span class="s2">&quot;main_processed_data.csv&quot;</span><span class="p">),</span>
+    <span class="n">scale_factor</span><span class="o">=</span><span class="mf">3.0</span>
+<span class="p">)</span>
+<span class="n">store</span><span class="p">(</span><span class="n">ProcessDataConfig</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s2">&quot;process_data&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;default_proc&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Note the <code class="docutils literal notranslate"><span class="pre">deps_path</span></code>:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">deps_path(&quot;generated_data.csv&quot;,</span> <span class="pre">gererate_data&quot;,</span> <span class="pre">&quot;default_gen&quot;)</span></code> tells ZenDag/DVC that this input comes from the <code class="docutils literal notranslate"><span class="pre">output_csv_path</span></code> (which was <code class="docutils literal notranslate"><span class="pre">generated_data.csv</span></code>) of the stage instance named <code class="docutils literal notranslate"><span class="pre">default_gen</span></code> in the <code class="docutils literal notranslate"><span class="pre">generate_data</span></code> group.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">stage_dir</span></code> interpolation provides the base output directory of the dependency stage.</p></li>
+</ul>
+</section>
+<section id="stage-3-summarize-data">
+<h3>Stage 3: Summarize Data<a class="headerlink" href="#stage-3-summarize-data" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># src/my_project/stages/summarize_data_stage.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">mlflow</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zendag.mlflow_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">mlflow_run</span>
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="nd">@mlflow_run</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">summarize_data</span><span class="p">(</span><span class="n">processed_input_csv_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">summary_output_txt_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Summarizing data from </span><span class="si">{</span><span class="n">processed_input_csv_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="c1"># Ensure dummy input exists if process_data wasn&#39;t run or its output isn&#39;t available</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="n">processed_input_csv_path</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input </span><span class="si">{</span><span class="n">processed_input_csv_path</span><span class="si">}</span><span class="s2"> not found for summarize_data. Creating dummy for example.&quot;</span><span class="p">)</span>
+        <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span> <span class="s1">&#39;processed_value&#39;</span><span class="p">:</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">50</span><span class="p">,</span><span class="mi">10</span><span class="p">)})</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">processed_input_csv_path</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">processed_input_csv_path</span><span class="p">)</span>
+    <span class="n">mean_val</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;processed_value&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="n">max_val</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;processed_value&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+    <span class="n">summary_content</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Data Summary:</span><span class="se">\n</span><span class="s2">Mean Processed Value: </span><span class="si">{</span><span class="n">mean_val</span><span class="si">}</span><span class="se">\n</span><span class="s2">Max Processed Value: </span><span class="si">{</span><span class="n">max_val</span><span class="si">}</span><span class="se">\n</span><span class="s2">Rows: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">Path</span><span class="p">(</span><span class="n">summary_output_txt_path</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">summary_output_txt_path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">summary_content</span><span class="p">)</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">log_metric</span><span class="p">(</span><span class="s2">&quot;mean_processed&quot;</span><span class="p">,</span> <span class="n">mean_val</span><span class="p">)</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">log_metric</span><span class="p">(</span><span class="s2">&quot;max_processed&quot;</span><span class="p">,</span> <span class="n">max_val</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Summary saved to </span><span class="si">{</span><span class="n">summary_output_txt_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;summary_file&quot;</span><span class="p">:</span> <span class="n">summary_output_txt_path</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>Config (<code class="docutils literal notranslate"><span class="pre">configs/summarize_data_config.py</span></code>):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># configs/summarize_data_config.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hydra_zen</span><span class="w"> </span><span class="kn">import</span> <span class="n">builds</span><span class="p">,</span> <span class="n">store</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zendag.config_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">deps_path</span><span class="p">,</span> <span class="n">outs_path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">my_project.stages.summarize_data_stage</span><span class="w"> </span><span class="kn">import</span> <span class="n">summarize_data</span>
+
+<span class="n">SummarizeDataConfig</span> <span class="o">=</span> <span class="n">builds</span><span class="p">(</span>
+    <span class="n">summarize_data</span><span class="p">,</span>
+    <span class="n">populate_full_signature</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">processed_input_csv_path</span><span class="o">=</span><span class="n">deps_path</span><span class="p">(</span> <span class="s2">&quot;main_processed_data.csv&quot;</span><span class="p">,</span> <span class="s2">&quot;process_data&quot;</span><span class="p">,</span><span class="s2">&quot;default_proc&quot;</span><span class="p">,),</span>
+    <span class="n">summary_output_txt_path</span><span class="o">=</span><span class="n">outs_path</span><span class="p">(</span><span class="s2">&quot;summary_report.txt&quot;</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">store</span><span class="p">(</span><span class="n">SummarizeDataConfig</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s2">&quot;summarize_data&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;default_summary&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="updated-configure-py">
+<h2>Updated <code class="docutils literal notranslate"><span class="pre">configure.py</span></code><a class="headerlink" href="#updated-configure-py" title="Link to this heading"></a></h2>
+<p>Modify your <code class="docutils literal notranslate"><span class="pre">configure.py</span></code> to include these new stage groups and their config imports:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># configure.py (modified)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">hydra_zen</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zendag.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">configure_pipeline</span>
+
+<span class="c1"># Import your config modules</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">configs.generate_data_config</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">configs.process_data_config</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">configs.summarize_data_config</span>
+
+
+<span class="n">store</span> <span class="o">=</span> <span class="n">hydra_zen</span><span class="o">.</span><span class="n">store</span>
+<span class="n">STAGE_GROUPS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;generate_data&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;process_data&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;summarize_data&quot;</span>
+<span class="p">]</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="c1"># Configure the ZenDag pipeline</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Configuring ZenDag pipeline to generate </span><span class="si">{</span><span class="n">DVC_FILENAME</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+    <span class="n">configure_pipeline</span><span class="p">(</span>
+        <span class="n">store</span><span class="o">=</span><span class="n">store</span><span class="p">,</span> <span class="n">stage_groups</span><span class="o">=</span><span class="n">STAGE_GROUPS</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">DVC_FILENAME</span><span class="si">}</span><span class="s2"> generated for multi-stage pipeline.&quot;</span><span class="p">)</span>
+
+</pre></div>
+</div>
+</section>
+<section id="running-configure-and-inspecting-the-dag">
+<h2>Running <code class="docutils literal notranslate"><span class="pre">configure</span></code> and Inspecting the DAG<a class="headerlink" href="#running-configure-and-inspecting-the-dag" title="Link to this heading"></a></h2>
+<ol class="arabic">
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">configure.py</span></code> (or <code class="docutils literal notranslate"><span class="pre">pixi</span> <span class="pre">run</span> <span class="pre">configure</span></code>).</p></li>
+<li><p>Open <code class="docutils literal notranslate"><span class="pre">dvc.yaml</span></code>. You’ll see all three stages. Notice how the <code class="docutils literal notranslate"><span class="pre">deps</span></code> of <code class="docutils literal notranslate"><span class="pre">process_data/default_proc</span></code> correctly points to the output path of <code class="docutils literal notranslate"><span class="pre">generate_data/default_gen</span></code>, and similarly for <code class="docutils literal notranslate"><span class="pre">summarize_data</span></code>. ZenDag resolved these paths.</p></li>
+<li><p>Visualize the DAG:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>dvc<span class="w"> </span>dag
+</pre></div>
+</div>
+<p>You should see a graph like:
+<code class="docutils literal notranslate"><span class="pre">generate_data/default_gen</span> <span class="pre">-&gt;</span> <span class="pre">process_data/default_proc</span> <span class="pre">-&gt;</span> <span class="pre">summarize_data/default_summary</span></code></p>
+</li>
+</ol>
+</section>
+<section id="running-the-pipeline-dvc-caching">
+<h2>Running the Pipeline &amp; DVC Caching<a class="headerlink" href="#running-the-pipeline-dvc-caching" title="Link to this heading"></a></h2>
+<ol class="arabic">
+<li><p><strong>First Run:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>dvc<span class="w"> </span>exp<span class="w"> </span>run
+</pre></div>
+</div>
+<p>All three stages will execute. Outputs will be generated in their respective <code class="docutils literal notranslate"><span class="pre">artifacts</span></code> subdirectories.</p>
+</li>
+<li><p><strong>Second Run (Caching):</strong>
+Run it again immediately:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>dvc<span class="w"> </span>exp<span class="w"> </span>run
+</pre></div>
+</div>
+<p>DVC will report that all stages are “cached” or “up-to-date” and won’t re-execute the Python code. This is because no inputs or parameters have changed.</p>
+</li>
+<li><p><strong>Modifying a Parameter &amp; Selective Re-run:</strong></p>
+<ul>
+<li><p>Open <code class="docutils literal notranslate"><span class="pre">configs/process_data_config.py</span></code> and change <code class="docutils literal notranslate"><span class="pre">scale_factor</span></code> in <code class="docutils literal notranslate"><span class="pre">ProcessDataConfig</span></code> (e.g., to <code class="docutils literal notranslate"><span class="pre">4.0</span></code>).</p></li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">configure.py</span></code> again. This updates <code class="docutils literal notranslate"><span class="pre">artifacts/process_data/default_proc.yaml</span></code>.</p></li>
+<li><p>Now, run the pipeline:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>dvc<span class="w"> </span>exp<span class="w"> </span>run
+</pre></div>
+</div>
+<p>Observe the output:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">generate_data/default_gen</span></code> will likely be “Pipeline-cached”.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">process_data/default_proc</span></code> will re-run because its parameter file (<code class="docutils literal notranslate"><span class="pre">default_proc.yaml</span></code>) changed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">summarize_data/default_summary</span></code> will also re-run because its input (the output of <code class="docutils literal notranslate"><span class="pre">process_data</span></code>) changed.</p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="conclusion">
+<h2>Conclusion<a class="headerlink" href="#conclusion" title="Link to this heading"></a></h2>
+<p>ZenDag’s use of <code class="docutils literal notranslate"><span class="pre">deps_path</span></code> and <code class="docutils literal notranslate"><span class="pre">outs_path</span></code> allows DVC to automatically understand the relationships between your pipeline stages, forming a DAG. DVC’s caching mechanism then ensures that only necessary parts of your pipeline are re-executed when inputs or parameters change, saving significant time and computational resources. The <code class="docutils literal notranslate"><span class="pre">${stage_dir:...}</span></code> interpolation is key for linking outputs of one stage to inputs of another in a clean way.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="quickstart.html" class="btn btn-neutral float-left" title="ZenDag Quickstart: Your First Pipeline" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="config_composition.html" class="btn btn-neutral float-right" title="Config Composition &amp; Reusable Components with ZenDag" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Quentin Febvre.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
