@@ -75,9 +75,9 @@ def test_configure_pipeline_single_stage_no_deps(
 
     # --- Assertions ---
     # 1. Check composed config was written
-    composed_config_path = temp_artifacts_dir / stage_name / f"{config_name}.yaml"
-    assert composed_config_path.exists()
-    composed_cfg = OmegaConf.load(composed_config_path)
+    composed_config_path = Path(stage_name) / f"{config_name}.yaml"
+    assert (Path(temp_artifacts_dir) / composed_config_path).exists()
+    composed_cfg = OmegaConf.load(Path(temp_artifacts_dir) / composed_config_path)
     print(OmegaConf.to_yaml(composed_cfg))
     assert composed_cfg._target_ == "tests.test_core.dummy_stage_function"  # Path to dummy_stage_function
     assert composed_cfg.some_param == 10
@@ -98,12 +98,13 @@ def test_configure_pipeline_single_stage_no_deps(
 
     expected_cmd_part = (
         f"python -m my_project.run_stage "
-        f"-cd {temp_artifacts_dir / stage_name} -cn {config_name} "
-        f"hydra.run.dir='{temp_artifacts_dir / stage_name / config_name}'"
+        f"-cd {stage_name} -cn {config_name} "
+        "+zendag=base "
+        f"hydra.run.dir='{Path(stage_name) / config_name}'"
     )
     assert expected_cmd_part in stage_info["cmd"]
     assert stage_info["deps"] == []  # No dependencies
-    assert stage_info["outs"] == [output_file]
+    assert stage_info["outs"] == [str(Path(stage_name) / config_name / Path(output_file).name)]
     assert stage_info["params"] == [{str(composed_config_path): None}]
 
 
@@ -138,7 +139,7 @@ def test_configure_pipeline_with_inter_stage_deps(
         # Correctly refer to stage1 output.
         # The `${deps:...}` resolver will use the base_dir part if input_stage/name are given.
         # The `${stage_dir(stage1_name, config1_name)}` will be resolved by the 'stage_dir' resolver.
-        input_path=f"${{deps:${{stage_dir:{stage1_name},{config1_name}}}/{stage1_output}}}",
+        input_path=f"${{deps:{stage_dir_func(stage1_name, config1_name)}/{stage1_output},True}}",
         output_path=f"${{outs:{stage2_output}}}",
         some_param=22,
         populate_full_signature=True,
@@ -167,9 +168,11 @@ def test_configure_pipeline_with_inter_stage_deps(
     assert dvc_stage2_key in dvc_data["stages"]
     stage2_info = dvc_data["stages"][dvc_stage2_key]
 
-    expected_stage1_output_path_in_dvc_deps = str(temp_artifacts_dir / stage1_name / config1_name / stage1_output)
+    expected_stage1_output_path_in_dvc_deps = str(Path(stage1_name) / config1_name / stage1_output)
+    print(dvc_data)
+    print(stage2_info)
     assert stage2_info["deps"] == [expected_stage1_output_path_in_dvc_deps]
-    assert stage2_info["outs"] == [stage2_output]
+    assert stage2_info["outs"] == [str(Path(stage2_name) / config2_name / stage2_output)]
 
     # Check composed config for stage 2
     composed_stage2_config_path = temp_artifacts_dir / stage2_name / f"{config2_name}.yaml"
@@ -178,7 +181,7 @@ def test_configure_pipeline_with_inter_stage_deps(
     # The input_path in the *written* config file should be resolved relative to nothing (i.e., the full path)
     # because the `${deps:...}` resolver just returns `k` after appending to the list.
     # And `${stage_dir...}` resolves to the path.
-    assert s2_cfg.input_path == str(temp_artifacts_dir / stage1_name / config1_name / stage1_output)
+    assert s2_cfg.input_path == str(Path(stage1_name) / config1_name / stage1_output)
 
 
 def test_configure_pipeline_empty_stage_group(

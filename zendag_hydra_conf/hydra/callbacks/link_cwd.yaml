@@ -1,5 +1,0 @@
-# @package _global_
-hydra:
-  callbacks:
-    my_callback:
-      _target_: zendag_hydra_conf.LinkCwd

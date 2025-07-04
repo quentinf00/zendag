@@ -10,11 +10,11 @@ from omegaconf import OmegaConf
 
 _log = logging.getLogger(__name__)
 
-ARTIFACTS_ROOT = os.getenv("ARTIFACTS_DIR", "artifacts")  # Default to "artifacts"
+ARTIFACTS_ROOT = os.getenv("ARTIFACTS_DIR", "workbench")  # Default to "workbench"
 
 
 # Default stage dir function, can be overridden
-def default_stage_dir_fn(stage: str, name: str) -> str:
+def default_stage_dir_fn(stage: str | None, name: str) -> str:
     """Generates the default path for a stage's output directory."""
     if stage is None:
         return f"{ARTIFACTS_ROOT}/{name}"
@@ -22,7 +22,7 @@ def default_stage_dir_fn(stage: str, name: str) -> str:
 
 
 # Default config dir function, can be overridden
-def default_configs_dir_fn(stage: str) -> str:
+def default_configs_dir_fn(stage: str | None) -> str:
     """Generates the default path for storing composed stage configs."""
     if stage is None:
         return ARTIFACTS_ROOT
@@ -31,17 +31,17 @@ def default_configs_dir_fn(stage: str) -> str:
 
 def configure_pipeline(
     store: hydra_zen.ZenStore | None = None,
-    stage_groups: List[str] | None = None,
-    stage_dir_fn: Callable[[str, str], str] = default_stage_dir_fn,
-    configs_dir_fn: Callable[[str], str] = default_configs_dir_fn,
+    stage_groups: List[str | None] | None = None,
+    stage_dir_fn: Callable[[str | None, str], str] = default_stage_dir_fn,
+    configs_dir_fn: Callable[[str | None], str] = default_configs_dir_fn,
     dvc_filename: str = "dvc.yaml",
     run_script: str = "zendag.run",  # Changed from xp_workflow.run
     config_root: Optional[str] = None,  # Optional root for hydra initialization
     manual_dvc: Optional[dict] = None,
     wdir=None,
     dvc_stage_name_fn: Callable | None = None,
-    dry: bool = False
-) -> dict[str, str]:
+    dry: bool = False,
+) -> dict[str, Path]:
     """
     Configures the DVC pipeline based on Hydra-Zen stored configurations.
 
@@ -58,10 +58,10 @@ def configure_pipeline(
                       processed.
         stage_dir_fn: A function `fn(stage_name, config_name) -> str` that returns
                       the base output directory path for a given stage instance.
-                      Defaults to `artifacts/<stage_name>/<config_name>`.
+                      Defaults to `workbench/<stage_name>/<config_name>`.
         configs_dir_fn: A function `fn(stage_name) -> str` that returns the directory
                         path where composed Hydra configs for a stage group will be
-                        stored. Defaults to `artifacts/<stage_name>`.
+                        stored. Defaults to `workbench/<stage_name>`.
         dvc_filename: The name of the DVC pipeline file to generate. Defaults to 'dvc.yaml'.
         run_script: The Python module path to execute for running a stage (e.g., 'my_project.run').
                     Defaults to 'zendag.run'.
@@ -74,32 +74,36 @@ def configure_pipeline(
     all_outs: Dict[Tuple[str, str], List[str]] = {}
     stage_config_paths: Dict[str, Path] = {}
 
-
-
     if store is None:
         store = hydra_zen.store
 
-    if dvc_stage_name_fn is None:   
-        dvc_stage_name_fn = (lambda g, n: f"{g}/{n}") if stage_groups is not None else (lambda _,n : n)
+    if dvc_stage_name_fn is None:
+        dvc_stage_name_fn = (lambda g, n: f"{g}/{n}") if stage_groups is not None else (lambda _, n: n)
 
     if stage_groups is None:
         stage_groups = [None]
 
-    if wdir is None:   
-        wdir = stage_dir_fn('','')
+    if wdir is None:
+        wdir = stage_dir_fn(None, "")
 
-    def wdir_p(p, w=True, lk='cwd'):
+    Path(wdir).mkdir(exist_ok=True, parents=True)  # Ensure the working directory exists
+    if not (Path(wdir) / "projroot").exists():
+        os.symlink(
+            Path(*([".."] * len(Path(wdir).parts))), Path(wdir) / "projroot", target_is_directory=True
+        )  # Link projroot to working directory
+
+    def wdir_p(p, w=True, lk="projroot"):
         if w:
             if wdir is None:
                 return p
-            return str(Path(p).relative_to(Path(wdir)))
-        return lk + "/"+ str(p)
+            return str(Path(p).absolute().relative_to(Path(wdir).absolute()))
+        return lk + "/" + str(p)
 
     _log.info("Initializing Hydra (version_base=1.3) for configuration composition.")
     # Initialize Hydra once if needed, respecting config_root
 
-    if hydra.core.global_hydra.GlobalHydra.instance().is_initialized():
-        hydra.core.global_hydra.GlobalHydra.instance().clear()
+    if GlobalHydra.instance().is_initialized():
+        GlobalHydra.instance().clear()
     if config_root:
         hydra.initialize(version_base="1.3", config_path=config_root)
     else:
@@ -153,9 +157,15 @@ def configure_pipeline(
 
             # IMPORTANT: Register resolvers *before* resolve call
             # These resolvers have side-effects (appending to lists)
-            OmegaConf.register_new_resolver("outs", lambda k: current_outs.append(wdir_p(k)) or wdir_p(k), replace=True)
-        
-            OmegaConf.register_new_resolver("deps", lambda k, w: current_deps.append(wdir_p(k, w)) or wdir_p(k, w), replace=True)
+
+            hydra_run_dir = wdir_p(stage_dir_fn(stage, name))
+            OmegaConf.register_new_resolver(
+                "outs", lambda k: current_outs.append(hydra_run_dir + "/" + k) or k, replace=True
+            )
+
+            OmegaConf.register_new_resolver(
+                "deps", lambda k, w: current_deps.append(wdir_p(k, w)) or wdir_p(k, w), replace=True
+            )
             # Hydra resolver needs the runtime context for the *specific* stage instance
 
             _log.debug(f"  Resolving configuration for '{stage}/{name}' to discover dependencies and outputs...")
@@ -192,12 +202,12 @@ def configure_pipeline(
             # 4. Define DVC stage entry
             dvc_stage_name = dvc_stage_name_fn(stage, name)
             stage_config_paths[dvc_stage_name] = composed_config_path
-            # Ensure the output directory path uses the function, not hardcoded 'artifacts'
-            hydra_run_dir = wdir_p(stage_dir_fn(stage, name))
+            # Ensure the output directory path uses the function, not hardcoded 'workbench'
             dvc_stages[dvc_stage_name] = dict(
                 cmd=(
                     f"python -m {run_script} "
                     f"-cd {wdir_p(configs_dir_fn(stage))} -cn {name} "
+                    "+zendag=base "
                     f"hydra.run.dir='{hydra_run_dir}'"  # Use quotes for safety
                 ),
                 **(dict() if wdir is None else dict(wdir=wdir)),
@@ -221,5 +231,5 @@ def configure_pipeline(
         _log.info(f"Successfully wrote DVC pipeline configuration to: {dvc_file}")
     except Exception as e:
         _log.error(f"Failed to write DVC pipeline file {dvc_file}. Error: {e}", exc_info=True)
-    GlobalHydra.instance().clear()    
+    GlobalHydra.instance().clear()
     return stage_config_paths

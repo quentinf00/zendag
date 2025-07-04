@@ -4,6 +4,8 @@ hydra:
     chdir: true
 
 defaults:
-  - override /hydra/callbacks: link_cwd
+  - override /hydra/callbacks: 
+    - basic_logging
+    - link_projroot
 
 

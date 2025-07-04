@@ -1,0 +1,5 @@
+# @package _global_
+hydra:
+  callbacks:
+    basic_logging:
+      _target_: zendag_hydra_conf.BasicLogging
